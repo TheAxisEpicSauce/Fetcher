@@ -17,7 +17,7 @@ class Join
     /**
      * @var string
      */
-    private $reporterClass;
+    private $fetcherClass;
 
     /**
      * Join constructor.
@@ -27,7 +27,7 @@ class Join
     public function __construct(string $path, string $reporterClass)
     {
         $this->path = $path;
-        $this->reporterClass = $reporterClass;
+        $this->fetcherClass = $reporterClass;
     }
 
     /**
@@ -46,9 +46,9 @@ class Join
     /**
      * @return string
      */
-    public function getReporterClass(): string
+    public function getFetcherClass(): string
     {
-        return $this->reporterClass;
+        return $this->fetcherClass;
     }
 
     public function getTables(): array

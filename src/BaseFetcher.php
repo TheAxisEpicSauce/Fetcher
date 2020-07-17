@@ -21,8 +21,8 @@ use Fetcher\Join\Join;
 use ReflectionClass;
 
 /**
- * Class BaseReporter
- * @package Svcrs\ReportersV2
+ * Class BaseFetcher
+ * @package Fetcher
  */
 abstract class BaseFetcher implements Fetcher
 {
@@ -87,7 +87,7 @@ abstract class BaseFetcher implements Fetcher
 
 
     /**
-     * BaseReporter constructor.
+     * BaseFetcher constructor.
      * @throws Exception
      */
     public function __construct()
@@ -113,22 +113,22 @@ abstract class BaseFetcher implements Fetcher
 
     public static function buildAnd(bool $isRaw = false): self
     {
-        $reporter = new static();
-        $reporter->isRaw = $isRaw;
-        $reporter->fieldGroup = new FieldGroup(FieldConjunction::AND, []);
-        $reporter->reset();
+        $fetcher = new static();
+        $fetcher->isRaw = $isRaw;
+        $fetcher->fieldGroup = new FieldGroup(FieldConjunction::AND, []);
+        $fetcher->reset();
 
-        return $reporter;
+        return $fetcher;
     }
 
     public static function buildOr(bool $isRaw = false): self
     {
-        $reporter = new static();
-        $reporter->isRaw = $isRaw;
-        $reporter->fieldGroup = new FieldGroup(FieldConjunction::OR, []);
-        $reporter->reset();
+        $fetcher = new static();
+        $fetcher->isRaw = $isRaw;
+        $fetcher->fieldGroup = new FieldGroup(FieldConjunction::OR, []);
+        $fetcher->reset();
 
-        return $reporter;
+        return $fetcher;
     }
 
     private function reset()
@@ -141,19 +141,19 @@ abstract class BaseFetcher implements Fetcher
 
     public static function queryFromArray(array $data, bool $isRaw = false)
     {
-        $reporter = new static();
-        $reporter->isRaw = $isRaw;
-        $reporter->fieldGroup = new FieldGroup($data['type'], []);
-        $reporter->reset();
+        $fetcher = new static();
+        $fetcher->isRaw = $isRaw;
+        $fetcher->fieldGroup = new FieldGroup($data['type'], []);
+        $fetcher->reset();
 
         $fields = $data['fields'];
-        $reporter->handleArray($fields);
+        $fetcher->handleArray($fields);
 
-        return $reporter;
+        return $fetcher;
     }
 
     //-------------------------------------------
-    // Reporter Calls
+    // Fetcher Calls
     //-------------------------------------------
     public function __call($method, $params)
     {
@@ -179,13 +179,13 @@ abstract class BaseFetcher implements Fetcher
 
     public static function __callStatic($method, $params)
     {
-        $reporter = self::build();
-        if (!$reporter->isWhereCall($method)) {
-            unset($reporter);
+        $fetcher = self::build();
+        if (!$fetcher->isWhereCall($method)) {
+            unset($fetcher);
             throw new BadMethodCallException(sprintf('Call to unknown method %s', $method));
         }
 
-        return $reporter->$method(...$params);
+        return $fetcher->$method(...$params);
     }
 
     public function or(Closure $closure)
@@ -269,9 +269,9 @@ abstract class BaseFetcher implements Fetcher
         $join = $this->findJoin($table, $this->getJoins());
         if (!$join) return false;
 
-        $reporterClass = $join->getReporterClass();
+        $fetcherClass = $join->getFetcherClass();
         /** @var FieldObject $field */
-        $field = (new $reporterClass)->makeFieldObject($field);
+        $field = (new $fetcherClass)->makeFieldObject($field);
         if ($field === null) return false;
 
         $field->setJoin($join);
@@ -283,22 +283,22 @@ abstract class BaseFetcher implements Fetcher
         return true;
     }
 
-    private $searchedReporters = [];
+    private $searchedFetchers = [];
 
-    private function findJoin($table, $availableJoins)
+    private function findJoin($table, $availableJoins): ?Join
     {
-        $availableJoins = array_diff($availableJoins, $this->searchedReporters);
-        foreach ($availableJoins as $availableJoin => $reporterClass) {
+        $availableJoins = array_diff($availableJoins, $this->searchedFetchers);
+        foreach ($availableJoins as $availableJoin => $fetcherClass) {
             if (array_key_exists($table, $availableJoins)) {
                 return new Join($table, $availableJoins[$table]);
             }
 
-            $join = $this->findJoin($table, (new $reporterClass)->getJoins());
+            $join = $this->findJoin($table, (new $fetcherClass)->getJoins());
             if ($join !== null) {
-                $join->prependPath($reporterClass::getTable());
+                $join->prependPath($fetcherClass::getTable());
                 return $join;
             } else {
-                $this->searchedReporters[] = $reporterClass;
+                $this->searchedFetchers[] = $fetcherClass;
             }
         }
 
@@ -333,7 +333,7 @@ abstract class BaseFetcher implements Fetcher
         $values = [];
         $fieldToStringClosure = function (Field $field) use (&$fieldToStringClosure, &$values) {
             if ($field instanceof FieldObject) {
-                $table = $field->getJoin()?$field->getJoin()->getReporterClass()::getTable():$this::getTable();
+                $table = $field->getJoin()?$field->getJoin()->getFetcherClass()::getTable():$this::getTable();
                 $values[] = $field->getValue();
                 return sprintf('`%s`.`%s` %s ?', $table, $field->getField(), $field->getOperator());
 
@@ -350,13 +350,13 @@ abstract class BaseFetcher implements Fetcher
         $joins = [];
         $joinsMade = [];
         foreach ($this->joinsToMake as $joinToMake) {
-            $currentReporter = $this;
+            $currentFetcher = $this;
             $tableFrom = $this->table;
             foreach ($joinToMake->getTables() as $tableTo) {
                 $joinMethod = 'join'.$this->studly($tableTo);
                 if (!array_key_exists($tableFrom, $joinsMade) || !in_array($tableTo, $joinsMade[$tableFrom])) {
-                    if (method_exists($currentReporter, $joinMethod)) {
-                        $joins[] = $currentReporter->{$joinMethod}();
+                    if (method_exists($currentFetcher, $joinMethod)) {
+                        $joins[] = $currentFetcher->{$joinMethod}();
                     } else {
                         $joins[] = sprintf(
                             '`%s` ON `%s`.`%s` = `%s`.`%s_%s`',
@@ -369,8 +369,8 @@ abstract class BaseFetcher implements Fetcher
                         );
                     }
                     $joinsMade[$tableFrom][] = $tableTo;
-                    $reporterTo = $currentReporter->getJoins()[$tableTo];;
-                    $currentReporter = new $reporterTo();
+                    $fetcherTo = $currentFetcher->getJoins()[$tableTo];;
+                    $currentFetcher = new $fetcherTo();
                 }
                 $tableFrom = $tableTo;
             }
@@ -483,8 +483,8 @@ abstract class BaseFetcher implements Fetcher
     private static function getTable()
     {
         if (array_key_exists(static::class, self::$tables)) self::$tables[static::class];
-        $reporter = new static();
-        $table = $reporter->table;
+        $fetcher = new static();
+        $table = $fetcher->table;
         self::$tables[static::class] = $table;
         return $table;
     }
@@ -518,7 +518,7 @@ abstract class BaseFetcher implements Fetcher
             if ($table === $this->table) {
                 $fields = $this->getFields();
             } elseif ($join = $this->findJoin($table, $this->getJoins())) {
-                $class = $join->getReporterClass();
+                $class = $join->getFetcherClass();
                 $fields = (new $class)->getFields();
             }
 

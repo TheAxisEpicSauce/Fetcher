@@ -17,5 +17,4 @@ class FieldType extends Enum
     CONST BOOLEAN = 'boolean';
     CONST DATE = 'date';
     CONST DATE_TIME = 'date_time';
-
 }
