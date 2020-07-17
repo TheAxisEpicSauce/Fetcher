@@ -8,7 +8,7 @@
 namespace Fetcher;
 
 
-interface Reporter
+interface Fetcher
 {
 
 }

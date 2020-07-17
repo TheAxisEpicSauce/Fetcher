@@ -24,7 +24,7 @@ use ReflectionClass;
  * Class BaseReporter
  * @package Svcrs\ReportersV2
  */
-abstract class BaseReporter implements Reporter
+abstract class BaseFetcher implements Fetcher
 {
     /**
      * @var PDO
