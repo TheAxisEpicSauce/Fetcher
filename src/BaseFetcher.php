@@ -399,7 +399,8 @@ abstract class BaseFetcher implements Fetcher
 
         $stmt = $this->getStatement();
 
-        $rows = $stmt->fetchAll(PDO::FETCH_NUM);
+        $method = $this->select === null?PDO::FETCH_ASSOC:PDO::FETCH_NUM;
+        $rows = $stmt->fetchAll($method);
 
         if ($this->isRaw) return $rows;
         throw new Exception('@TODO');
@@ -417,8 +418,9 @@ abstract class BaseFetcher implements Fetcher
         $this->queryString .=' LIMIT 1';
 
         $stmt = $this->getStatement();
-
-        $rows = $stmt->fetchAll(PDO::FETCH_NUM);
+        
+        $method = $this->select === null?PDO::FETCH_ASSOC:PDO::FETCH_NUM;
+        $rows = $stmt->fetchAll($method);
         $row = array_pop($rows);
 
         if ($row === null) return null;
