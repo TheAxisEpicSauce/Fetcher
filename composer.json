@@ -2,7 +2,7 @@
     "name": "taes/fetcher",
     "type": "library",
     "description": "Your package description goes here",
-    "keywords": ["discord"],
+    "keywords": ["database"],
     "license": "MIT",
     "authors": [
         {

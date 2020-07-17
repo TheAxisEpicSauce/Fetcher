@@ -218,6 +218,8 @@ abstract class BaseFetcher implements Fetcher
                 $repo = $field['type']===FieldConjunction::OR?self::buildOr():self::buildAnd();
                 $repo->handleArray($field['fields']);
                 $this->fieldGroup->addField($repo->fieldGroup);
+            } else {
+                throw new Exception('Cannot handle given field');
             }
         }
     }
@@ -418,7 +420,7 @@ abstract class BaseFetcher implements Fetcher
         $this->queryString .=' LIMIT 1';
 
         $stmt = $this->getStatement();
-        
+
         $method = $this->select === null?PDO::FETCH_ASSOC:PDO::FETCH_NUM;
         $rows = $stmt->fetchAll($method);
         $row = array_pop($rows);
