@@ -8,7 +8,9 @@
 namespace Fetcher\Field;
 
 
-class FieldConjunction
+use Fetcher\Enums\Enum;
+
+class FieldConjunction extends Enum
 {
     CONST AND = 'and';
     CONST OR = 'or';

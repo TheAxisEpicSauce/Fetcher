@@ -7,7 +7,9 @@
 
 namespace Fetcher\Field;
 
-class FieldType
+use Fetcher\Enums\Enum;
+
+class FieldType extends Enum
 {
     CONST INT = 'int';
     CONST STRING = 'string';
