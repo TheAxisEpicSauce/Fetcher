@@ -401,8 +401,7 @@ abstract class BaseFetcher implements Fetcher
 
         $stmt = $this->getStatement();
 
-        $method = $this->select === null?PDO::FETCH_ASSOC:PDO::FETCH_NUM;
-        $rows = $stmt->fetchAll($method);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         if ($this->isRaw) return $rows;
         throw new Exception('@TODO');
@@ -421,8 +420,7 @@ abstract class BaseFetcher implements Fetcher
 
         $stmt = $this->getStatement();
 
-        $method = $this->select === null?PDO::FETCH_ASSOC:PDO::FETCH_NUM;
-        $rows = $stmt->fetchAll($method);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $row = array_pop($rows);
 
         if ($row === null) return null;
@@ -492,6 +490,11 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     // Setters
     //-------------------------------------------
+    /**
+     * @param array|null $select
+     * @return $this
+     * @throws Exception
+     */
     public function select(?array $select = null)
     {
         if ($select === null) {
@@ -507,6 +510,7 @@ abstract class BaseFetcher implements Fetcher
                 $this->select = ['*'];
                 return $this;
             }
+
             [$field, $as] = $this->separateAs($field);
 
             if (strpos($field, '.') !== false) {
@@ -528,6 +532,7 @@ abstract class BaseFetcher implements Fetcher
             if (!in_array($field, array_keys($fields))) {
                 throw new Exception(sprintf('Invalid field %s', $fullField));
             }
+
             $this->select[] = $fullField.($as?' AS '.$as:'');
             if ($join !== null) $this->joinsToMake[] = $join;
         }
