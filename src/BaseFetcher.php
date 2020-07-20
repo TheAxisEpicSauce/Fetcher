@@ -506,7 +506,10 @@ abstract class BaseFetcher implements Fetcher
             if ($field === '*') {
                 $this->select = ['*'];
                 return $this;
-            } elseif (strpos($field, '.') !== false) {
+            }
+            [$field, $as] = $this->separateAs($field);
+
+            if (strpos($field, '.') !== false) {
                 [$table, $field] = explode('.', $field);
             } else {
                 $table = $this->table;
@@ -525,7 +528,7 @@ abstract class BaseFetcher implements Fetcher
             if (!in_array($field, array_keys($fields))) {
                 throw new Exception(sprintf('Invalid field %s', $fullField));
             }
-            $this->select[] = $fullField;
+            $this->select[] = $fullField.($as?' AS '.$as:'');
             if ($join !== null) $this->joinsToMake[] = $join;
         }
         return $this;
@@ -549,6 +552,17 @@ abstract class BaseFetcher implements Fetcher
             $value = strtolower(preg_replace('/(.)(?=[A-Z])/u', '$1_', $value));
         }
         return $value;
+    }
+
+    private function separateAs(string $field)
+    {
+        if (preg_match('/([a-zA-Z.])+( AS )([a-zA-Z])+/g', $field, $matches)){
+            return [
+                $matches[1],
+                $matches[3]
+            ];
+        }
+        return [$field, null];
     }
 
 }
