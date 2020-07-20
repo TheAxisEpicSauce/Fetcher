@@ -561,7 +561,7 @@ abstract class BaseFetcher implements Fetcher
 
     private function separateAs(string $field)
     {
-        if (preg_match('/([a-zA-Z.])+( AS )([a-zA-Z])+/g', $field, $matches)){
+        if (preg_match('/([a-zA-Z.])+( AS )([a-zA-Z])+/', $field, $matches)){
             return [
                 $matches[1],
                 $matches[3]
