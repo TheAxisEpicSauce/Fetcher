@@ -274,7 +274,6 @@ abstract class BaseFetcher implements Fetcher
         if (!$join) return false;
 
         $fetcherClass = $join->getFetcherClass();
-        /** @var FieldObject $field */
         $field = (new $fetcherClass)->makeFieldObject($field);
         if ($field === null) return false;
 
@@ -324,9 +323,8 @@ abstract class BaseFetcher implements Fetcher
             return new FieldObject($matches[3], $this->getFields()[$matches[3]], $this->fieldPrefixes[$matches[2]]);
         } elseif (preg_match($this->getFieldSuffixRegex(), $fieldString, $matches)) {
             return new FieldObject($matches[2], $this->getFields()[$matches[2]], $this->fieldSuffixes[$matches[3]]);
-        } else {
-            return null;
         }
+        return null;
     }
 
     //-------------------------------------------
@@ -341,14 +339,7 @@ abstract class BaseFetcher implements Fetcher
         $whereString = $this->getWhereString($values);
         $limitString = $this->limit?' LIMIT '.$this->limit:'';
 
-        $query = sprintf(
-            "SELECT %s FROM %s%s%s%s",
-            $selectString,
-            $this->table,
-            $joinString,
-            $whereString,
-            $limitString
-        );
+        $query = "SELECT " . $selectString . " FROM " . $this->table . $joinString . $whereString . $limitString;
 
         $this->queryString = $query;
         $this->queryValues = $values;

@@ -40,6 +40,14 @@ class FetcherTest extends TestCase
         parent::setUp();
     }
 
+    public function testBuild()
+    {
+        $this->assertInstanceOf(
+            get_class($this->userFetcher),
+            $fetcher = $this->userFetcher::build()
+        );
+    }
+
     public function testValidSelectAs()
     {
         $this->assertInstanceOf(
