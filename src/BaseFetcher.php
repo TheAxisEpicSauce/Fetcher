@@ -84,6 +84,10 @@ abstract class BaseFetcher implements Fetcher
      * @var array
      */
     private $select;
+    /**
+     * @var null|int
+     */
+    private $limit;
 
 
     /**
@@ -331,6 +335,55 @@ abstract class BaseFetcher implements Fetcher
     private function buildQuery()
     {
         $values = [];
+
+        $selectString = $this->getSelectString();
+        $joinString = $this->getJoinString();
+        $whereString = $this->getWhereString($values);
+        $limitString = $this->limit?' LIMIT '.$this->limit:'';
+
+        $query = sprintf(
+            "SELECT %s FROM %s%s%s%s",
+            $selectString,
+            $this->table,
+            $joinString,
+            $whereString,
+            $limitString
+        );
+
+        $this->queryString = $query;
+        $this->queryValues = $values;
+    }
+
+    private function getSelectString()
+    {
+        return $this->select?implode(', ', $this->select):$this->table.'.*';
+    }
+
+    private function getJoinString()
+    {
+        $joins = [];
+        $joinsMade = [];
+        foreach ($this->joinsToMake as $joinToMake) {
+            $currentFetcher = $this;
+            $tableFrom = $this->table;
+            foreach ($joinToMake->getTables() as $tableTo) {
+                $joinMethod = 'join'.$this->studly($tableTo);
+                if (!array_key_exists($tableFrom, $joinsMade) || !in_array($tableTo, $joinsMade[$tableFrom])) {
+                    if (!method_exists($currentFetcher, $joinMethod)) throw new Exception('Missing join method '.$joinMethod);
+                    $joins[] = $currentFetcher->{$joinMethod}();
+                    $joinsMade[$tableFrom][] = $tableTo;
+                    $fetcherTo = $currentFetcher->getJoins()[$tableTo];;
+                    $currentFetcher = new $fetcherTo();
+                }
+                $tableFrom = $tableTo;
+            }
+        }
+
+        return empty($joins)?'':' JOIN '.implode(' JOIN ', $joins);
+    }
+
+    private function getWhereString(array &$values = [])
+    {
         $fieldToStringClosure = function (Field $field) use (&$fieldToStringClosure, &$values) {
             if ($field instanceof FieldObject) {
                 $table = $field->getJoin()?$field->getJoin()->getFetcherClass()::getTable():$this::getTable();
@@ -347,46 +400,9 @@ abstract class BaseFetcher implements Fetcher
             return '';
         };
 
-        $joins = [];
-        $joinsMade = [];
-        foreach ($this->joinsToMake as $joinToMake) {
-            $currentFetcher = $this;
-            $tableFrom = $this->table;
-            foreach ($joinToMake->getTables() as $tableTo) {
-                $joinMethod = 'join'.$this->studly($tableTo);
-                if (!array_key_exists($tableFrom, $joinsMade) || !in_array($tableTo, $joinsMade[$tableFrom])) {
-                    if (method_exists($currentFetcher, $joinMethod)) {
-                        $joins[] = $currentFetcher->{$joinMethod}();
-                    } else {
-                        $joins[] = sprintf(
-                            '`%s` ON `%s`.`%s` = `%s`.`%s_%s`',
-                            $tableTo,
-                            $tableTo,
-                            'id',
-                            $tableFrom,
-                            $tableTo,
-                            'id'
-                        );
-                    }
-                    $joinsMade[$tableFrom][] = $tableTo;
-                    $fetcherTo = $currentFetcher->getJoins()[$tableTo];;
-                    $currentFetcher = new $fetcherTo();
-                }
-                $tableFrom = $tableTo;
-            }
-        }
-
         $where = substr($fieldToStringClosure($this->fieldGroup), 1, -1);
-        $query = sprintf(
-            "SELECT %s FROM %s%s%s",
-            $this->select?implode(', ', $this->select):$this->table.'.*',
-            $this->table,
-            empty($joins)?'':' JOIN '.implode(' JOIN ', $joins),
-            empty($where)?'':' WHERE '.$where
-        );
 
-        $this->queryString = $query;
-        $this->queryValues = $values;
+        return empty($where)?'':' WHERE '.$where;
     }
 
     /**
@@ -415,8 +431,8 @@ abstract class BaseFetcher implements Fetcher
      */
     public function first()
     {
+        $this->limit(1);
         $this->buildQuery();
-        $this->queryString .=' LIMIT 1';
 
         $stmt = $this->getStatement();
 
@@ -488,7 +504,7 @@ abstract class BaseFetcher implements Fetcher
     }
 
     //-------------------------------------------
-    // Setters
+    // QueryParams
     //-------------------------------------------
     /**
      * @param array|null $select
@@ -537,6 +553,11 @@ abstract class BaseFetcher implements Fetcher
             if ($join !== null) $this->joinsToMake[] = $join;
         }
         return $this;
+    }
+
+    public function limit(?int $limit)
+    {
+        $this->limit = $limit;
     }
 
     //-------------------------------------------
