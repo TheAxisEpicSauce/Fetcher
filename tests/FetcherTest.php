@@ -82,6 +82,14 @@ class FetcherTest extends TestCase
         $this->assertEquals('SELECT user.* FROM user WHERE `user`.`id` = ? OR `user`.`id` = ?', $query);
     }
 
+    public function testSelectAll()
+    {
+        $selectList = $this->userFetcher->select(['user.*'])->getSelect();
+        $this->assertEquals([
+            '`user`.`id`', '`user`.`username`'
+        ], $selectList);
+    }
+
     public function testValidSelectAs()
     {
         $this->assertInstanceOf(

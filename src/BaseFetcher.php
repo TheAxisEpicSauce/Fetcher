@@ -524,11 +524,6 @@ abstract class BaseFetcher implements Fetcher
         $this->isRaw = true;
 
         foreach ($select as $field) {
-            if ($field === '*') {
-                $this->select = ['*'];
-                return $this;
-            }
-
             [$field, $as] = $this->separateAs($field);
 
             if (strpos($field, '.') !== false) {
@@ -536,30 +531,52 @@ abstract class BaseFetcher implements Fetcher
             } else {
                 $table = $this->table;
             }
-            $fullField = sprintf('`%s`.`%s`', $table, $field);
 
             $join = null;
             $fields = [];
             if ($table === $this->table) {
-                $fields = $this->getFields();
+                $fields = array_keys($this->getFields());
             } elseif ($join = $this->findJoin($table, $this->getJoins())) {
                 $class = $join->getFetcherClass();
-                $fields = (new $class)->getFields();
+                $fields = array_keys((new $class)->getFields());
+            } else {
+                throw new Exception('Could not find table '. $table);
             }
 
-            if (!in_array($field, array_keys($fields))) {
-                throw new Exception(sprintf('Invalid field %s', $fullField));
+            if (!in_array($field, $fields) && $field !== '*') {
+                throw new Exception(sprintf('Invalid field %s.%s', $table, $field));
             }
 
-            $this->select[] = $fullField.($as?' AS '.$as:'');
+            if ($field !== '*') $fields = [$field.($as?' AS '.$as:'')];
+
+            $this->addSelectFields($table, $fields);
+
             if ($join !== null) $this->joinsToMake[] = $join;
         }
         return $this;
     }
 
+    private function addSelectFields(string $table, array $fields)
+    {
+        foreach ($fields as $field) {
+            $selectString = sprintf('`%s`.`%s`', $table, $field);
+            $this->select[] = $selectString;
+        }
+    }
+
+    public function getSelect()
+    {
+        return $this->select;
+    }
+
     public function limit(?int $limit)
     {
         $this->limit = $limit;
+    }
+
+    public function getLimit()
+    {
+        return $this->limit;
     }
 
     //-------------------------------------------
