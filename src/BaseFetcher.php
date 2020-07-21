@@ -161,9 +161,10 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     public function __call($method, $params)
     {
-        if (count($params) === 0) return $this;
 
         if ($this->isWhereCall($method)) {
+            if (count($params) === 0) throw new Exception('Missing parameter 1');
+
             $field = $this->snake(substr($method, 5));
             $value = $params[0];
 
@@ -173,7 +174,8 @@ abstract class BaseFetcher implements Fetcher
             }
 
             $success = $this->handleWhere($field, $value);
-            if (!$success) $this->handleJoin($field, $value);
+            if (!$success && strpos($field, '.')) $success = $this->handleJoin($field, $value);
+            if (!$success) throw new Exception('Cannot find field '.$field);
         } else {
             throw new BadMethodCallException(sprintf('Call to unknown method %s', $method));
         }
@@ -259,8 +261,18 @@ abstract class BaseFetcher implements Fetcher
         if ($field === null) return false;
 
         $field->setValue($param);
+
+        $this->validateFieldObject($field);
+
         $this->fieldGroup->addField($field);
         return true;
+    }
+
+    private function validateFieldObject(FieldObject $fieldObject)
+    {
+        if ($fieldObject->getType() === FieldType::INT && !is_int($fieldObject->getValue())) {
+            throw new Exception('Value should be of type int');
+        }
     }
 
     //-------------------------------------------

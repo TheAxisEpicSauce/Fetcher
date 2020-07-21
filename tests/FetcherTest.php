@@ -44,8 +44,42 @@ class FetcherTest extends TestCase
     {
         $this->assertInstanceOf(
             get_class($this->userFetcher),
-            $fetcher = $this->userFetcher::build()
+            $this->userFetcher::build()
         );
+    }
+
+    public function testValidWhere()
+    {
+        $this->assertInstanceOf(
+            get_class($this->userFetcher),
+            $this->userFetcher::build()->whereId(5)
+        );
+    }
+
+    public function testInvalidWhereValue()
+    {
+        $this->expectException(Exception::class);
+
+        $this->userFetcher::build()->whereId("test");
+    }
+
+    public function testInvalidWhereField()
+    {
+        $this->expectException(Exception::class);
+
+        $this->userFetcher::build()->whereNonExistingField(5);
+    }
+
+    public function testAndGroup()
+    {
+        $query = $this->userFetcher::build()->whereId(1)->whereUsername('test')->toSql();
+        $this->assertEquals('SELECT user.* FROM user WHERE `user`.`id` = ? AND `user`.`username` = ?', $query);
+    }
+
+    public function testOrGroup()
+    {
+        $query = $this->userFetcher::buildOr()->whereId(1)->whereId(2)->toSql();
+        $this->assertEquals('SELECT user.* FROM user WHERE `user`.`id` = ? OR `user`.`id` = ?', $query);
     }
 
     public function testValidSelectAs()
