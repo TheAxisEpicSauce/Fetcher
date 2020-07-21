@@ -110,12 +110,12 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     // New instance
     //-------------------------------------------
-    public static function build(bool $isRaw = false): self
+    public static function build(bool $isRaw = true): self
     {
         return self::buildAnd($isRaw);
     }
 
-    public static function buildAnd(bool $isRaw = false): self
+    public static function buildAnd(bool $isRaw = true): self
     {
         $fetcher = new static();
         $fetcher->isRaw = $isRaw;
@@ -125,7 +125,7 @@ abstract class BaseFetcher implements Fetcher
         return $fetcher;
     }
 
-    public static function buildOr(bool $isRaw = false): self
+    public static function buildOr(bool $isRaw = true): self
     {
         $fetcher = new static();
         $fetcher->isRaw = $isRaw;
@@ -135,15 +135,7 @@ abstract class BaseFetcher implements Fetcher
         return $fetcher;
     }
 
-    private function reset()
-    {
-        $this->joinsToMake = [];
-        $this->select = null;
-        $this->queryString = null;
-        $this->queryValues = null;
-    }
-
-    public static function queryFromArray(array $data, bool $isRaw = false)
+    public static function buildFromArray(array $data, bool $isRaw = true)
     {
         $fetcher = new static();
         $fetcher->isRaw = $isRaw;
@@ -154,6 +146,14 @@ abstract class BaseFetcher implements Fetcher
         $fetcher->handleArray($fields);
 
         return $fetcher;
+    }
+
+    private function reset()
+    {
+        $this->joinsToMake = [];
+        $this->select = null;
+        $this->queryString = null;
+        $this->queryValues = null;
     }
 
     //-------------------------------------------
@@ -389,7 +389,6 @@ abstract class BaseFetcher implements Fetcher
                 $table = $field->getJoin()?$field->getJoin()->getFetcherClass()::getTable():$this::getTable();
                 $values[] = $field->getValue();
                 return sprintf('`%s`.`%s` %s ?', $table, $field->getField(), $field->getOperator());
-
             } elseif ($field instanceof FieldGroup) {
                 $fields = [];
                 foreach ($field->getFields() as $f) {
