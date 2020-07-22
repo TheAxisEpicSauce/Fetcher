@@ -543,9 +543,11 @@ abstract class BaseFetcher implements Fetcher
                 throw new Exception(sprintf('Invalid field %s.%s', $table, $field));
             }
 
-            if ($field !== '*') $fields = [$field.($as?' AS '.$as:'')];
-
-            $this->addSelectFields($table, $fields);
+            if ($field === '*') {
+                $this->addSelectFields($table, $fields);
+            } else {
+                $this->addSelectField($table, $field, $as);
+            }
 
             if ($join !== null) $this->joinsToMake[] = $join;
         }
@@ -555,11 +557,18 @@ abstract class BaseFetcher implements Fetcher
     private function addSelectFields(string $table, array $fields)
     {
         foreach ($fields as $field) {
-            $selectString = sprintf('`%s`.`%s`', $table, $field);
-            $this->select[] = $selectString;
+            $as = null;
+            if ($table !==  $this->table) $as = $table.'_'.$field;
+            $this->addSelectField($table, $field, $as);
         }
     }
 
+    private function addSelectField(string $table, string $field, ?string $as)
+    {
+        $selectString = sprintf('`%s`.`%s`%s', $table, $field, $as?' AS '.$as:'');
+        $this->select[] = $selectString;
+    }
+    
     public function getSelect()
     {
         return $this->select;
