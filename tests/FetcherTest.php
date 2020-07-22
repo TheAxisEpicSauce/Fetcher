@@ -73,23 +73,23 @@ class FetcherTest extends TestCase
     public function testAndGroup()
     {
         $query = $this->userFetcher::build()->whereId(1)->whereUsername('test')->toSql();
-        $this->assertEquals('SELECT user.* FROM user WHERE `user`.`id` = ? AND `user`.`username` = ?', $query);
+        $this->assertEquals('SELECT `user`.`id`, `user`.`username` FROM user WHERE `user`.`id` = ? AND `user`.`username` = ?', $query);
     }
 
     public function testOrGroup()
     {
         $query = $this->userFetcher::buildOr()->whereId(1)->whereId(2)->toSql();
-        $this->assertEquals('SELECT user.* FROM user WHERE `user`.`id` = ? OR `user`.`id` = ?', $query);
+        $this->assertEquals('SELECT `user`.`id`, `user`.`username` FROM user WHERE `user`.`id` = ? OR `user`.`id` = ?', $query);
     }
 
     public function testSelectAll()
     {
-        $selectList = $this->userFetcher->getSelect();
+        $selectList = $this->userFetcher::build()->getSelect();
         $this->assertEquals([
             '`user`.`id`', '`user`.`username`'
         ], $selectList);
 
-        $selectList = $this->userFetcher->select(['user.*'])->getSelect();
+        $selectList = $this->userFetcher::build()->select(['user.*'])->getSelect();
         $this->assertEquals([
             '`user`.`id`', '`user`.`username`'
         ], $selectList);
