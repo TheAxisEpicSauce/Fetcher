@@ -151,7 +151,7 @@ abstract class BaseFetcher implements Fetcher
     private function reset()
     {
         $this->joinsToMake = [];
-        $this->select = null;
+        $this->select();
         $this->queryString = null;
         $this->queryValues = null;
     }
@@ -515,10 +515,7 @@ abstract class BaseFetcher implements Fetcher
      */
     public function select(?array $select = null)
     {
-        if ($select === null) {
-            $this->select = null;
-            return $this;
-        }
+        if ($select === null) $select = ["*"];
 
         $this->select = [];
         $this->isRaw = true;
@@ -533,7 +530,6 @@ abstract class BaseFetcher implements Fetcher
             }
 
             $join = null;
-            $fields = [];
             if ($table === $this->table) {
                 $fields = array_keys($this->getFields());
             } elseif ($join = $this->findJoin($table, $this->getJoins())) {
@@ -601,10 +597,10 @@ abstract class BaseFetcher implements Fetcher
 
     private function separateAs(string $field)
     {
-        if (preg_match('/([a-zA-Z.]+)( AS | as )([a-zA-Z]+)/', $field, $matches)){
+        if (preg_match('/(|^)([a-zA-Z._]+)( AS | as )([a-zA-Z]+)(|$)/', $field, $matches)){
             return [
-                $matches[1],
-                $matches[3]
+                $matches[2],
+                $matches[4]
             ];
         }
         return [$field, null];

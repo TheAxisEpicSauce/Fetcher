@@ -84,6 +84,11 @@ class FetcherTest extends TestCase
 
     public function testSelectAll()
     {
+        $selectList = $this->userFetcher->getSelect();
+        $this->assertEquals([
+            '`user`.`id`', '`user`.`username`'
+        ], $selectList);
+
         $selectList = $this->userFetcher->select(['user.*'])->getSelect();
         $this->assertEquals([
             '`user`.`id`', '`user`.`username`'
