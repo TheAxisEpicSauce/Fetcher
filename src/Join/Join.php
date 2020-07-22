@@ -18,16 +18,22 @@ class Join
      * @var string
      */
     private $fetcherClass;
+    /**
+     * @var string
+     */
+    private $type;
 
     /**
      * Join constructor.
      * @param string $path
      * @param string $reporterClass
+     * @param string $type
      */
-    public function __construct(string $path, string $reporterClass)
+    public function __construct(string $path, string $reporterClass, string $type = 'full')
     {
         $this->path = $path;
         $this->fetcherClass = $reporterClass;
+        $this->type = $type;
     }
 
     /**
@@ -36,6 +42,16 @@ class Join
     public function getPath(): string
     {
         return $this->path;
+    }
+
+    public function pathEnd()
+    {
+        return array_pop($this->getTables());
+    }
+
+    public function pathLength()
+    {
+        return count($this->getTables());
     }
 
     public function prependPath(string $table)
@@ -54,5 +70,15 @@ class Join
     public function getTables(): array
     {
         return explode('.', $this->path);
+    }
+
+    public function setLeftJoin()
+    {
+        $this->type = 'left';
+    }
+
+    public function setFullJoin()
+    {
+        $this->type = 'full';
     }
 }

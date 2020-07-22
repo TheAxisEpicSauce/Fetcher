@@ -69,7 +69,7 @@ abstract class BaseFetcher implements Fetcher
      */
     private $fieldGroup = null;
     /**
-     * @var array
+     * @var array|Join[]
      */
     private $joinsToMake = [];
     /**
@@ -84,6 +84,18 @@ abstract class BaseFetcher implements Fetcher
      * @var array
      */
     private $select;
+    /**
+     * @var array|string[]
+     */
+    private $selectedFields;
+    /**
+     * @var array|BaseFetcher[]
+     */
+    private $tableFetcherLookup;
+    /**
+     * @var array|string[]
+     */
+    private $parseMethods;
     /**
      * @var null|int
      */
@@ -293,7 +305,7 @@ abstract class BaseFetcher implements Fetcher
         $field->setValue($param);
         $this->fieldGroup->addField($field);
 
-        if ($join !== null) $this->joinsToMake[] = $join;
+        if ($join !== null) $this->joinsToMake[$join->pathEnd()] = $join;
 
         return true;
     }
@@ -346,10 +358,10 @@ abstract class BaseFetcher implements Fetcher
     {
         $values = [];
 
-        $selectString = $this->getSelectString();
-        $joinString = $this->getJoinString();
-        $whereString = $this->getWhereString($values);
-        $limitString = $this->limit?' LIMIT '.$this->limit:'';
+        $selectString   = $this->getSelectString();
+        $joinString     = $this->getJoinString();
+        $whereString    = $this->getWhereString($values);
+        $limitString    = $this->limit?' LIMIT '.$this->limit:'';
 
         $query = "SELECT " . $selectString . " FROM " . $this->table . $joinString . $whereString . $limitString;
 
@@ -364,25 +376,32 @@ abstract class BaseFetcher implements Fetcher
 
     private function getJoinString()
     {
-        $joins = [];
         $joinsMade = [];
-        foreach ($this->joinsToMake as $joinToMake) {
+        $joinString = '';
+
+        $joinsToMake = usort($this->joinsToMake, function(Join $a, Join $b) {
+            return $b->pathLength() - $a->pathLength();
+        });
+        foreach ($joinsToMake as $joinToMake) {
             $currentFetcher = $this;
             $tableFrom = $this->table;
+            $this->tableFetcherLookup[$tableFrom] = $this;
+
             foreach ($joinToMake->getTables() as $tableTo) {
                 $joinMethod = 'join'.$this->studly($tableTo);
                 if (!array_key_exists($tableFrom, $joinsMade) || !in_array($tableTo, $joinsMade[$tableFrom])) {
                     if (!method_exists($currentFetcher, $joinMethod)) throw new Exception('Missing join method '.$joinMethod);
-                    $joins[] = $currentFetcher->{$joinMethod}();
+                    $joinString .= ' JOIN '.$currentFetcher->{$joinMethod}();
                     $joinsMade[$tableFrom][] = $tableTo;
-                    $fetcherTo = $currentFetcher->getJoins()[$tableTo];;
+                    $fetcherTo = $currentFetcher->getJoins()[$tableTo];
                     $currentFetcher = new $fetcherTo();
+                    $this->tableFetcherLookup[$tableTo] = $currentFetcher;
                 }
                 $tableFrom = $tableTo;
             }
         }
 
-        return empty($joins)?'':' JOIN '.implode(' JOIN ', $joins);
+        return $joinString;
     }
 
     private function getWhereString(array &$values = [])
@@ -549,7 +568,13 @@ abstract class BaseFetcher implements Fetcher
                 $this->addSelectField($table, $field, $as);
             }
 
-            if ($join !== null) $this->joinsToMake[] = $join;
+            if ($join !== null) {
+                if (array_key_exists($join->pathEnd(), $this->joinsToMake)) {
+                    $this->joinsToMake[$join->pathEnd()]->setFullJoin();
+                } else {
+                    $this->joinsToMake[$join->pathEnd()] = $join;
+                }
+            }
         }
         return $this;
     }
@@ -567,8 +592,9 @@ abstract class BaseFetcher implements Fetcher
     {
         $selectString = sprintf('`%s`.`%s`%s', $table, $field, $as?' AS '.$as:'');
         $this->select[] = $selectString;
+        $this->selectedFields[$as] = [$table, $field];
     }
-    
+
     public function getSelect()
     {
         return $this->select;
@@ -615,4 +641,16 @@ abstract class BaseFetcher implements Fetcher
         return [$field, null];
     }
 
+    private function hasParseMethod(string $table, string $field)
+    {
+        $field = $this->studly($field);
+        $method = 'parse'.$field.'Field';
+        $index = $table.'.'.$field;
+
+        if (array_key_exists($index, $this->parseMethods)) $this->parseMethods[$index];
+
+        $exists = method_exists($this->tableFetcherLookup[$table], $method);
+        $this->parseMethods[$index] = $exists;
+        return $exists;
+    }
 }
