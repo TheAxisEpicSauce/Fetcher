@@ -3,6 +3,7 @@
 use Fetcher\BaseFetcher;
 use Fetcher\Field\FieldType;
 use PHPUnit\Framework\TestCase;
+use Tests\Fetchers\UserFetcher;
 
 /**
  * User: Raphael Pelissier
@@ -12,47 +13,19 @@ use PHPUnit\Framework\TestCase;
 
 class FetcherTest extends TestCase
 {
-    /**
-     * @var BaseFetcher
-     */
-    private $userFetcher;
-
-    protected function setUp(): void
-    {
-        // @UserFetcher
-        $this->userFetcher = new class extends BaseFetcher {
-            protected $table = 'user';
-
-            protected function getFields(): array
-            {
-                return [
-                    'id' => FieldType::INT,
-                    'username' => FieldType::STRING
-                ];
-            }
-
-            protected function getJoins(): array
-            {
-                return [];
-            }
-        };
-
-        parent::setUp();
-    }
-
     public function testBuild()
     {
         $this->assertInstanceOf(
-            get_class($this->userFetcher),
-            $this->userFetcher::build()
+            UserFetcher::class,
+            UserFetcher::build()
         );
     }
 
     public function testValidWhere()
     {
         $this->assertInstanceOf(
-            get_class($this->userFetcher),
-            $this->userFetcher::build()->whereId(5)
+            UserFetcher::class,
+            UserFetcher::build()->whereId(5)
         );
     }
 
@@ -60,36 +33,42 @@ class FetcherTest extends TestCase
     {
         $this->expectException(Exception::class);
 
-        $this->userFetcher::build()->whereId("test");
+        UserFetcher::build()->whereId("test");
     }
 
     public function testInvalidWhereField()
     {
         $this->expectException(Exception::class);
 
-        $this->userFetcher::build()->whereNonExistingField(5);
+        UserFetcher::build()->whereNonExistingField(5);
     }
 
     public function testAndGroup()
     {
-        $query = $this->userFetcher::build()->whereId(1)->whereUsername('test')->toSql();
-        $this->assertEquals('SELECT `user`.`id`, `user`.`username` FROM user WHERE `user`.`id` = ? AND `user`.`username` = ?', $query);
+        $query = UserFetcher::build()->whereId(1)->whereUsername('test')->toSql();
+        $this->assertEquals(
+            'SELECT `user`.`id`, `user`.`username` FROM user WHERE `user`.`id` = ? AND `user`.`username` = ?',
+            $query
+        );
     }
 
     public function testOrGroup()
     {
-        $query = $this->userFetcher::buildOr()->whereId(1)->whereId(2)->toSql();
-        $this->assertEquals('SELECT `user`.`id`, `user`.`username` FROM user WHERE `user`.`id` = ? OR `user`.`id` = ?', $query);
+        $query = UserFetcher::buildOr()->whereId(1)->whereId(2)->toSql();
+        $this->assertEquals(
+            'SELECT `user`.`id`, `user`.`username` FROM user WHERE `user`.`id` = ? OR `user`.`id` = ?',
+            $query
+        );
     }
 
     public function testSelectAll()
     {
-        $selectList = $this->userFetcher::build()->getSelect();
+        $selectList = UserFetcher::build()->getSelect();
         $this->assertEquals([
             '`user`.`id`', '`user`.`username`'
         ], $selectList);
 
-        $selectList = $this->userFetcher::build()->select(['user.*'])->getSelect();
+        $selectList = UserFetcher::build()->select(['user.*'])->getSelect();
         $this->assertEquals([
             '`user`.`id`', '`user`.`username`'
         ], $selectList);
@@ -99,7 +78,7 @@ class FetcherTest extends TestCase
     {
         $this->assertInstanceOf(
             BaseFetcher::class,
-            $this->userFetcher->select(['username AS name'])
+            UserFetcher::build()->select(['username AS name'])
         );
     }
 
@@ -107,6 +86,16 @@ class FetcherTest extends TestCase
     {
         $this->expectException(Exception::class);
 
-        $this->userFetcher->select(['user_name AS name']);
+        UserFetcher::build()->select(['user_name AS name']);
+    }
+
+    public function testSelectJoin()
+    {
+        $query = UserFetcher::build()->select(['user.*', 'address.*'])->toSql();
+
+        $this->assertEquals(
+            'yest',
+            $query
+        );
     }
 }

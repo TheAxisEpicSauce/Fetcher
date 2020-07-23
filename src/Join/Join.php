@@ -29,7 +29,7 @@ class Join
      * @param string $reporterClass
      * @param string $type
      */
-    public function __construct(string $path, string $reporterClass, string $type = 'full')
+    public function __construct(string $path, string $reporterClass, string $type = 'left')
     {
         $this->path = $path;
         $this->fetcherClass = $reporterClass;

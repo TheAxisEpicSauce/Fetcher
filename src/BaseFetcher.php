@@ -379,7 +379,7 @@ abstract class BaseFetcher implements Fetcher
         $joinsMade = [];
         $joinString = '';
 
-        $joinsToMake = usort($this->joinsToMake, function(Join $a, Join $b) {
+        usort($this->joinsToMake, function(Join $a, Join $b) {
             return $b->pathLength() - $a->pathLength();
         });
         foreach ($joinsToMake as $joinToMake) {
