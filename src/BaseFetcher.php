@@ -119,6 +119,15 @@ abstract class BaseFetcher implements Fetcher
         self::$connection = $connection;
     }
 
+    public function getName(): ?string
+    {
+        try {
+            return (new ReflectionClass($this))->getShortName();
+        } catch (\ReflectionException $e) {
+            return null;
+        }
+    }
+
     //-------------------------------------------
     // New instance
     //-------------------------------------------
@@ -173,7 +182,6 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     public function __call($method, $params)
     {
-
         if ($this->isWhereCall($method)) {
             if (count($params) === 0) throw new Exception('Missing parameter 1');
 
@@ -382,7 +390,8 @@ abstract class BaseFetcher implements Fetcher
         usort($this->joinsToMake, function(Join $a, Join $b) {
             return $b->pathLength() - $a->pathLength();
         });
-        foreach ($joinsToMake as $joinToMake) {
+
+        foreach ($this->joinsToMake as $joinToMake) {
             $currentFetcher = $this;
             $tableFrom = $this->table;
             $this->tableFetcherLookup[$tableFrom] = $this;
@@ -390,12 +399,17 @@ abstract class BaseFetcher implements Fetcher
             foreach ($joinToMake->getTables() as $tableTo) {
                 $joinMethod = 'join'.$this->studly($tableTo);
                 if (!array_key_exists($tableFrom, $joinsMade) || !in_array($tableTo, $joinsMade[$tableFrom])) {
-                    if (!method_exists($currentFetcher, $joinMethod)) throw new Exception('Missing join method '.$joinMethod);
-                    $joinString .= ' JOIN '.$currentFetcher->{$joinMethod}();
+                    if (!method_exists($currentFetcher, $joinMethod)) throw new Exception(sprintf(
+                        '%s misses join method %s', $currentFetcher->getName(), $joinMethod
+                    ));
+
+                    $js = $currentFetcher->{$joinMethod}();
+                    if (!is_array($js)) $js = [$js];
+                    foreach ($js as $j) $joinString .= ($joinToMake->isLeftJoin()?' LEFT':'').' JOIN '.$j;
+
                     $joinsMade[$tableFrom][] = $tableTo;
                     $fetcherTo = $currentFetcher->getJoins()[$tableTo];
-                    $currentFetcher = new $fetcherTo();
-                    $this->tableFetcherLookup[$tableTo] = $currentFetcher;
+                    $this->tableFetcherLookup[$tableTo] = $currentFetcher = new $fetcherTo();
                 }
                 $tableFrom = $tableTo;
             }

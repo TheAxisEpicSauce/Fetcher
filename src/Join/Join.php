@@ -46,7 +46,8 @@ class Join
 
     public function pathEnd()
     {
-        return array_pop($this->getTables());
+        $tables = $this->getTables();
+        return array_pop($tables);
     }
 
     public function pathLength()
@@ -75,6 +76,11 @@ class Join
     public function setLeftJoin()
     {
         $this->type = 'left';
+    }
+
+    public function isLeftJoin()
+    {
+        return $this->type = 'left';
     }
 
     public function setFullJoin()

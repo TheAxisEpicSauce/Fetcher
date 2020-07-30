@@ -47,7 +47,7 @@ class FetcherTest extends TestCase
     {
         $query = UserFetcher::build()->whereId(1)->whereUsername('test')->toSql();
         $this->assertEquals(
-            'SELECT `user`.`id`, `user`.`username` FROM user WHERE `user`.`id` = ? AND `user`.`username` = ?',
+            'SELECT `user`.`id`, `user`.`username`, `user`.`address_id` FROM user WHERE `user`.`id` = ? AND `user`.`username` = ?',
             $query
         );
     }
@@ -56,7 +56,7 @@ class FetcherTest extends TestCase
     {
         $query = UserFetcher::buildOr()->whereId(1)->whereId(2)->toSql();
         $this->assertEquals(
-            'SELECT `user`.`id`, `user`.`username` FROM user WHERE `user`.`id` = ? OR `user`.`id` = ?',
+            'SELECT `user`.`id`, `user`.`username`, `user`.`address_id` FROM user WHERE `user`.`id` = ? OR `user`.`id` = ?',
             $query
         );
     }
@@ -65,12 +65,12 @@ class FetcherTest extends TestCase
     {
         $selectList = UserFetcher::build()->getSelect();
         $this->assertEquals([
-            '`user`.`id`', '`user`.`username`'
+            '`user`.`id`', '`user`.`username`', '`user`.`address_id`'
         ], $selectList);
 
         $selectList = UserFetcher::build()->select(['user.*'])->getSelect();
         $this->assertEquals([
-            '`user`.`id`', '`user`.`username`'
+            '`user`.`id`', '`user`.`username`', '`user`.`address_id`'
         ], $selectList);
     }
 
@@ -94,7 +94,7 @@ class FetcherTest extends TestCase
         $query = UserFetcher::build()->select(['user.*', 'address.*'])->toSql();
 
         $this->assertEquals(
-            'yest',
+            'SELECT `user`.`id`, `user`.`username`, `user`.`address_id`, `address`.`id` AS address_id, `address`.`street` AS address_street, `address`.`number` AS address_number FROM user LEFT JOIN address ON address.id = user.address_id',
             $query
         );
     }
