@@ -11,6 +11,8 @@ namespace Fetcher;
 use BadMethodCallException;
 use Closure;
 use Exception;
+use Fetcher\Field\Operator;
+use Fetcher\Validator\FieldObjectValidator;
 use PDO;
 use Fetcher\Field\Field;
 use Fetcher\Field\FieldConjunction;
@@ -33,23 +35,23 @@ abstract class BaseFetcher implements Fetcher
 
     private $fieldPrefixRegex = null;
     private $fieldPrefixes = [
-        '' => '=',
-        'is_' => '='
+        '' => Operator::EQUALS,
+        'is_' => Operator::EQUALS
     ];
 
     private $fieldSuffixRegex = null;
     private $fieldSuffixes = [
-        '' => '=',
-        '_is' => '=',
-        '_is_not' => '!=',
-        '_gt' => '>',
-        '_gte' => '>=',
-        '_lt' => '<',
-        '_lte' => '<=',
-        '_like' => 'LIKE',
-        '_in' => 'in',
-        '_in_like' => 'in_like',
-        '_not_in' => 'not_in'
+        '' =>  Operator::EQUALS,
+        '_is' =>  Operator::EQUALS,
+        '_is_not' =>  Operator::NOT_EQUALS,
+        '_gt' =>  Operator::GREATER,
+        '_gte' =>  Operator::GREATER_OR_EQUAL,
+        '_lt' =>  Operator::LESS,
+        '_lte' =>  Operator::LESS_OR_EQUAL,
+        '_like' =>  Operator::LIKE,
+        '_in' =>  Operator::IN,
+        '_in_like' =>  Operator::IN_LIKE,
+        '_not_in' =>  Operator::NOT_IN
     ];
 
     /**
@@ -100,6 +102,10 @@ abstract class BaseFetcher implements Fetcher
      * @var null|int
      */
     private $limit;
+    /**
+     * @var FieldObjectValidator
+     */
+    private $fieldObjectValidator;
 
 
     /**
@@ -109,6 +115,7 @@ abstract class BaseFetcher implements Fetcher
     public function __construct()
     {
         if ($this->table === null) throw new Exception('table not set');
+        $this->fieldObjectValidator = new FieldObjectValidator();
     }
 
     /**
@@ -282,17 +289,10 @@ abstract class BaseFetcher implements Fetcher
 
         $field->setValue($param);
 
-        $this->validateFieldObject($field);
+        $this->fieldObjectValidator->validate($field);
 
         $this->fieldGroup->addField($field);
         return true;
-    }
-
-    private function validateFieldObject(FieldObject $fieldObject)
-    {
-        if ($fieldObject->getType() === FieldType::INT && !is_int($fieldObject->getValue())) {
-            throw new Exception('Value should be of type int');
-        }
     }
 
     //-------------------------------------------
@@ -423,13 +423,17 @@ abstract class BaseFetcher implements Fetcher
         $fieldToStringClosure = function (Field $field) use (&$fieldToStringClosure, &$values) {
             if ($field instanceof FieldObject) {
                 $table = $field->getJoin()?$field->getJoin()->getFetcherClass()::getTable():$this::getTable();
-                $values[] = $field->getValue();
-                return sprintf('`%s`.`%s` %s ?', $table, $field->getField(), $field->getOperator());
+                $marks = [];
+                if (is_array($field->getValue())) {
+                    foreach ($field->getValue() as $v) {$values[] = $v; $marks[] = '?';}
+                } else {
+                    $values[] = $field->getValue(); $marks[] = '?';
+                }
+                $marks = count($marks)>1?'('.implode(', ', $marks).')':'?';
+                return sprintf('`%s`.`%s` %s %s', $table, $field->getField(), $field->getOperator(), $marks);
             } elseif ($field instanceof FieldGroup) {
                 $fields = [];
-                foreach ($field->getFields() as $f) {
-                    $fields[] = $fieldToStringClosure($f);
-                }
+                foreach ($field->getFields() as $f) $fields[] = $fieldToStringClosure($f);
                 return '('.implode($field->getConjunction()===FieldConjunction::AND?' AND ':' OR ', $fields).')';
             }
             return '';

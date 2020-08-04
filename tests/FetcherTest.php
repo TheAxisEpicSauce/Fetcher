@@ -29,11 +29,28 @@ class FetcherTest extends TestCase
         );
     }
 
+    public function testValidWhereIn()
+    {
+        $query = UserFetcher::build()->whereIdIn([1, 2, 3])->toSql();
+
+        $this->assertEquals(
+            'SELECT `user`.`id`, `user`.`username`, `user`.`address_id` FROM user WHERE `user`.`id` IN (?, ?, ?)',
+            $query
+        );
+    }
+
     public function testInvalidWhereValue()
     {
         $this->expectException(Exception::class);
 
         UserFetcher::build()->whereId("test");
+    }
+
+    public function testInvalidWhereInValue()
+    {
+        $this->expectException(Exception::class);
+
+        UserFetcher::build()->whereIdIn([1, 2, "three"]);
     }
 
     public function testInvalidWhereField()
