@@ -37,6 +37,13 @@ class FetcherTest extends TestCase
             'SELECT `user`.`id`, `user`.`username`, `user`.`address_id` FROM user WHERE `user`.`id` IN (?, ?, ?)',
             $query
         );
+
+        $query = UserFetcher::build()->whereIdIn([1])->toSql();
+
+        $this->assertEquals(
+            'SELECT `user`.`id`, `user`.`username`, `user`.`address_id` FROM user WHERE `user`.`id` IN (?)',
+            $query
+        );
     }
 
     public function testInvalidWhereValue()

@@ -423,13 +423,14 @@ abstract class BaseFetcher implements Fetcher
         $fieldToStringClosure = function (Field $field) use (&$fieldToStringClosure, &$values) {
             if ($field instanceof FieldObject) {
                 $table = $field->getJoin()?$field->getJoin()->getFetcherClass()::getTable():$this::getTable();
-                $marks = [];
                 if (is_array($field->getValue())) {
+                    $marks = [];
                     foreach ($field->getValue() as $v) {$values[] = $v; $marks[] = '?';}
+                    $marks = '('.implode(', ', $marks).')';
                 } else {
                     $values[] = $field->getValue(); $marks[] = '?';
+                    $marks = '?';
                 }
-                $marks = count($marks)>1?'('.implode(', ', $marks).')':'?';
                 return sprintf('`%s`.`%s` %s %s', $table, $field->getField(), $field->getOperator(), $marks);
             } elseif ($field instanceof FieldGroup) {
                 $fields = [];
