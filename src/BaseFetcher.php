@@ -467,7 +467,7 @@ abstract class BaseFetcher implements Fetcher
     {
         $this->select([$field]);
         $this->isRaw = true;
-        return $this->get();
+        return array_map('array_pop', $this->get());
     }
 
     /**
