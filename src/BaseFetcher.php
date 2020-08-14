@@ -463,6 +463,13 @@ abstract class BaseFetcher implements Fetcher
         throw new Exception('@TODO');
     }
 
+    public function pluck(string $field)
+    {
+        $this->select([$field]);
+        $this->isRaw = true;
+        return $this->get();
+    }
+
     /**
      * Get the first result or null if empty
      *
@@ -483,6 +490,14 @@ abstract class BaseFetcher implements Fetcher
 
         if ($this->isRaw) return $row;
         throw new Exception('@TODO');
+    }
+
+    public function value(string $field)
+    {
+        $this->select([$field]);
+        $this->isRaw = true;
+        $row = $this->first();
+        return array_pop($row);
     }
 
     /**
