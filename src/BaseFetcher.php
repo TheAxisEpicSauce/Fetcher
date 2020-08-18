@@ -428,7 +428,7 @@ abstract class BaseFetcher implements Fetcher
                     foreach ($field->getValue() as $v) {$values[] = $v; $marks[] = '?';}
                     $marks = '('.implode(', ', $marks).')';
                 } else {
-                    $values[] = $field->getValue(); $marks[] = '?';
+                    $values[] = $field->getValue();
                     $marks = '?';
                 }
                 return sprintf('`%s`.`%s` %s %s', $table, $field->getField(), $field->getOperator(), $marks);

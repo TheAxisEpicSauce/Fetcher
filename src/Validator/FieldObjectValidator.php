@@ -50,7 +50,7 @@ class FieldObjectValidator
                 $valid = true;
                 break;
         }
-        if (!$valid) throw new Exception('value should be of type '.$type);
+        if (!$valid && $value !== null) throw new Exception('value should be of type '.$type);
         return $valid;
     }
 }
