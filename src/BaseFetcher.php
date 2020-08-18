@@ -500,6 +500,7 @@ abstract class BaseFetcher implements Fetcher
         $this->select([$field]);
         $this->isRaw = true;
         $row = $this->first();
+        if ($row === null) return null;
         return array_pop($row);
     }
 
