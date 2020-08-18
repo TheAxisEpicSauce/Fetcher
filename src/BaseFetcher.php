@@ -430,10 +430,15 @@ abstract class BaseFetcher implements Fetcher
                     $marks = [];
                     foreach ($field->getValue() as $v) {$values[] = $v; $marks[] = '?';}
                     $marks = '('.implode(', ', $marks).')';
+                } elseif ($field->getOperator() === Operator::EQUALS && $field->getValue() === null) {
+                    return sprintf('`%s`.`%s` %s', $table, $field->getField(), 'IS NULL');
+                } elseif ($field->getOperator() === Operator::NOT_EQUALS && $field->getValue() === null) {
+                    return sprintf('`%s`.`%s` %s', $table, $field->getField(), 'IS NOT NULL');
                 } else {
                     $values[] = $field->getValue();
                     $marks = '?';
                 }
+
                 return sprintf('`%s`.`%s` %s %s', $table, $field->getField(), $field->getOperator(), $marks);
             } elseif ($field instanceof FieldGroup) {
                 $fields = [];
