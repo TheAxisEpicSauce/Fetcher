@@ -275,6 +275,9 @@ abstract class BaseFetcher implements Fetcher
         $repo = $fullField===FieldConjunction::OR?self::buildOr():self::buildAnd();
         $param($repo);
         $group = $repo->fieldGroup;
+        foreach ($repo->joinsToMake as $joinToMake) {
+            $this->joinsToMake[$joinToMake->pathEnd()] = $joinToMake;
+        }
         $this->fieldGroup->addField($group);
         return true;
     }
