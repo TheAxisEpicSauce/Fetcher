@@ -194,14 +194,19 @@ abstract class BaseFetcher implements Fetcher
 
             $field = $this->snake(substr($method, 5));
             $value = $params[0];
-
+            $operator = null;
+            
             if ($field === '' && count($params) === 2) {
                 $field = $params[0];
                 $value = $params[1];
+            } elseif ($field === '' && count($params) === 3) {
+                $field = $params[0];
+                $operator = $params[1];
+                $value = $params[2];
             }
 
-            $success = $this->handleWhere($field, $value);
-            if (!$success && strpos($field, '.')) $success = $this->handleJoin($field, $value);
+            $success = $this->handleWhere($field, $value, $operator);
+            if (!$success && strpos($field, '.')) $success = $this->handleJoin($field, $value, $operator);
             if (!$success) throw new Exception('Cannot find field '.$field);
         } else {
             throw new BadMethodCallException(sprintf('Call to unknown method %s', $method));
@@ -285,31 +290,28 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     // Handle where call
     //-------------------------------------------
-    private function handleWhere($fullField, $param)
+    private function handleWhere($fullField, $param, ?string $operator = null)
     {
-        $field = $this->makeFieldObject($fullField);
+        $field = $this->makeFieldObject($fullField, $param, $operator);
         if ($field === null) return false;
 
-        $field->setValue($param);
-
-        $this->fieldObjectValidator->validate($field);
-
         $this->fieldGroup->addField($field);
+
         return true;
     }
 
     //-------------------------------------------
     // Handle join call
     //-------------------------------------------
-    private function handleJoin($fullField, $param)
+    private function handleJoin($fullField, $param, ?string $operator = null)
     {
-        [$table, $field] = explode('.', $fullField);
+        [$table, $fullField] = explode('.', $fullField);
 
         $join = $this->findJoin($table, $this->getJoins());
         if (!$join) return false;
 
         $fetcherClass = $join->getFetcherClass();
-        $field = (new $fetcherClass)->makeFieldObject($field);
+        $field = (new $fetcherClass)->makeFieldObject($fullField, $param, $operator);
         if ($field === null) return false;
 
         $field->setJoin($join);
@@ -349,15 +351,37 @@ abstract class BaseFetcher implements Fetcher
     /**
      * Returns the field object if string is valid, else null
      *
-     * @param string $fieldString
+     * @param string $fullField
+     * @param $value
+     * @param string|null $operator
      * @return FieldObject|null
      */
-    private function makeFieldObject(string $fieldString): ?FieldObject
+    private function makeFieldObject(string $fullField, $value, ?string $operator = null): ?FieldObject
     {
-        if (preg_match($this->getFieldPrefixRegex(), $fieldString, $matches)) {
-            return new FieldObject($matches[3], $this->getFields()[$matches[3]], $this->fieldPrefixes[$matches[2]]);
-        } elseif (preg_match($this->getFieldSuffixRegex(), $fieldString, $matches)) {
-            return new FieldObject($matches[2], $this->getFields()[$matches[2]], $this->fieldSuffixes[$matches[3]]);
+        if ($operator === null) {
+            $fieldData = $this->splitFullField($fullField);
+            if ($fieldData === null) return null;
+            [$field, $operator] = $fieldData;
+        } else {
+            $field = $fullField;
+        }
+
+        if (!$this->validateField($field)) return null;
+        if (!$this->validateOperator($operator)) return null;
+
+        $object = new FieldObject($field, $this->getFieldType($field), $operator, $value);
+
+        $this->fieldObjectValidator->validate($object);
+
+        return $object;
+    }
+
+    private function splitFullField(string $fullField)
+    {
+        if (preg_match($this->getFieldPrefixRegex(), $fullField, $matches)) {
+            return [$matches[3], $this->fieldPrefixes[$matches[2]]];
+        } elseif (preg_match($this->getFieldSuffixRegex(), $fullField, $matches)) {
+            return [$matches[2], $this->fieldSuffixes[$matches[3]]];
         }
         return null;
     }
@@ -540,6 +564,11 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     protected abstract function getFields(): array;
 
+    private function getFieldType(string $field)
+    {
+        return $this->getFields()[$field];
+    }
+
     protected abstract function getJoins(): array;
 
     private function getFieldPrefixRegex()
@@ -651,6 +680,19 @@ abstract class BaseFetcher implements Fetcher
     public function getLimit()
     {
         return $this->limit;
+    }
+
+    //-------------------------------------------
+    // Validate
+    //-------------------------------------------
+    private function validateField(string $field)
+    {
+        return array_key_exists($field, $this->getFields());
+    }
+
+    private function validateOperator(string $operator)
+    {
+        return Operator::isValidValue($operator);
     }
 
     //-------------------------------------------
