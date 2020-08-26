@@ -16,14 +16,21 @@ use Fetcher\Field\Operator;
 class FieldObjectValidator
 {
     /**
+     * @var FieldObject
+     */
+    private $object;
+
+    /**
      * @param FieldObject $fieldObject
      * @throws Exception
      */
     public function validate(FieldObject $fieldObject)
     {
+        $this->object = $fieldObject;
+
         if ($this->isArrayOperator($fieldObject->getOperator())) {
             if (!is_array($fieldObject->getValue())) {
-                throw new Exception('value should be of type array');
+                throw new Exception(sprintf('value of %s should be of type array', $this->object->getField()));
             }
             foreach ($fieldObject->getValue() as $value)
                 $this->validateFromType($fieldObject->getType(), $value);
@@ -50,7 +57,10 @@ class FieldObjectValidator
                 $valid = true;
                 break;
         }
-        if (!$valid && $value !== null) throw new Exception('value should be of type '.$type);
+        if (!$valid && $value !== null) throw new Exception(sprintf(
+            'value of %s should be of type %s', $this->object->getField(), $type
+        ));
+
         return $valid;
     }
 }

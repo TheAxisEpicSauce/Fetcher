@@ -195,7 +195,7 @@ abstract class BaseFetcher implements Fetcher
             $field = $this->snake(substr($method, 5));
             $value = $params[0];
             $operator = null;
-            
+
             if ($field === '' && count($params) === 2) {
                 $field = $params[0];
                 $value = $params[1];
