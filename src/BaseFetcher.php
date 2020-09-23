@@ -533,6 +533,15 @@ abstract class BaseFetcher implements Fetcher
         return array_pop($row);
     }
 
+    public function count()
+    {
+        $this->buildQuery();
+
+        $stmt = $this->getStatement();
+
+        return count($stmt->fetchAll(PDO::FETCH_ASSOC));
+    }
+
     /**
      * @return bool|\PDOStatement
      * @throws Exception
