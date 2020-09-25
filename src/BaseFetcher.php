@@ -535,11 +535,22 @@ abstract class BaseFetcher implements Fetcher
 
     public function count()
     {
-        $this->select = ['count(*) as count'];
+        $this->select = ['count(*) as total'];
         $this->isRaw = true;
         $row = $this->first();
 
-        return $row?$row['count']:0;
+        return $row?$row['total']:0;
+    }
+
+    public function sum(string $field)
+    {
+        $this->select([$field]);
+
+        $this->select = ['sum('.$this->select[0].') as total'];
+        $this->isRaw = true;
+        $row = $this->first();
+
+        return $row?$row['total']:0;
     }
 
     /**
