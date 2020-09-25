@@ -535,11 +535,11 @@ abstract class BaseFetcher implements Fetcher
 
     public function count()
     {
-        $this->buildQuery();
+        $this->select = ['count(*) as count'];
+        $this->isRaw = true;
+        $row = $this->first();
 
-        $stmt = $this->getStatement();
-
-        return count($stmt->fetchAll(PDO::FETCH_ASSOC));
+        return $row?$row['count']:0;
     }
 
     /**
@@ -616,6 +616,7 @@ abstract class BaseFetcher implements Fetcher
     public function select(?array $select = null)
     {
         if ($select === null) $select = ["*"];
+
 
         $this->select = [];
         $this->isRaw = true;
