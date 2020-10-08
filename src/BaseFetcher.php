@@ -517,7 +517,7 @@ abstract class BaseFetcher implements Fetcher
         if (count($this->groupFields) > 0) {
             foreach ($rows as $index => $row) {
                 foreach ($this->groupFields as $groupField)
-                    $rows[$index][$groupField] = explode(', ', $row[$groupField]);
+                    $rows[$index][$groupField] = explode(',', $row[$groupField]);
             }
         }
         if ($this->isRaw) return $rows;
@@ -546,6 +546,10 @@ abstract class BaseFetcher implements Fetcher
 
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $row = array_pop($rows);
+        if (count($this->groupFields) > 0) {
+            foreach ($this->groupFields as $groupField)
+                $row[$groupField] = explode(',', $row[$groupField]);
+        }
 
         if ($row === null) return null;
 
