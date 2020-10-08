@@ -118,7 +118,10 @@ abstract class BaseFetcher implements Fetcher
      * @var null|string|array
      */
     private $groupBy = null;
-
+    /**
+     * @var array
+     */
+    private $groupFields = [];
 
     /**
      * BaseFetcher constructor.
@@ -196,6 +199,7 @@ abstract class BaseFetcher implements Fetcher
         $this->queryValues = null;
         $this->needsGroupBy = null;
         $this->groupBy = $this->table.'.'.$this->key;
+        $this->groupFields = [];
     }
 
     //-------------------------------------------
@@ -510,7 +514,12 @@ abstract class BaseFetcher implements Fetcher
         $stmt = $this->getStatement();
 
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
+        if (count($this->groupFields) > 0) {
+            foreach ($rows as $index => $row) {
+                foreach ($this->groupFields as $groupField)
+                    $rows[$index][$groupField] = explode(', ', $row[$groupField]);
+            }
+        }
         if ($this->isRaw) return $rows;
         throw new Exception('@TODO');
     }
@@ -708,6 +717,8 @@ abstract class BaseFetcher implements Fetcher
         $fullField = sprintf('`%s`.`%s`', $table, $field);
         if ($modifier === 'group') {
             $fullField = sprintf('GROUP_CONCAT(%s)', $fullField);
+            $as = $as?:$field;
+            $this->groupFields[] = $as;
         }
 
         $selectString = sprintf('%s%s', $fullField, $as?' AS '.$as:'');
@@ -765,7 +776,7 @@ abstract class BaseFetcher implements Fetcher
 
     private function separateAs(string $field)
     {
-        if (preg_match('/(|^)([()a-zA-Z._]+)( AS | as )([a-zA-Z]+)(|$)/', $field, $matches)){
+        if (preg_match('/(|^)([()a-zA-Z._]+)( AS | as )([()a-zA-Z._]+)(|$)/', $field, $matches)){
             return [
                 $matches[2],
                 $matches[4]
@@ -776,7 +787,7 @@ abstract class BaseFetcher implements Fetcher
 
     private function separateModifier(string $field)
     {
-        if (preg_match('/(|^)(group|)(\()(a-zA-Z._)(\))(|$)/', $field, $matches)){
+        if (preg_match('/(|^)(group|)(\()([()a-zA-Z._]+)(\))(|$)/', $field, $matches)){
             return [
                 $matches[4],
                 $matches[2]
