@@ -59,6 +59,10 @@ abstract class BaseFetcher implements Fetcher
      */
     protected $table = null;
     /**
+     * @var string
+     */
+    protected $key = 'id';
+    /**
      * @var null
      */
     protected $model = null;
@@ -106,6 +110,14 @@ abstract class BaseFetcher implements Fetcher
      * @var FieldObjectValidator
      */
     private $fieldObjectValidator;
+    /**
+     * @var bool
+     */
+    private $needsGroupBy = false;
+    /**
+     * @var null|string|array
+     */
+    private $groupBy = null;
 
 
     /**
@@ -182,6 +194,8 @@ abstract class BaseFetcher implements Fetcher
         $this->select();
         $this->queryString = null;
         $this->queryValues = null;
+        $this->needsGroupBy = null;
+        $this->groupBy = $this->table.'.'.$this->key;
     }
 
     //-------------------------------------------
@@ -634,12 +648,14 @@ abstract class BaseFetcher implements Fetcher
     {
         if ($select === null) $select = ["*"];
 
-
         $this->select = [];
         $this->isRaw = true;
 
         foreach ($select as $field) {
             [$field, $as] = $this->separateAs($field);
+
+            [$field, $modifier] = $this->separateModifier($field);
+            if ($modifier === 'group') $this->needsGroupBy = true;
 
             if (strpos($field, '.') !== false) {
                 [$table, $field] = explode('.', $field);
@@ -664,7 +680,7 @@ abstract class BaseFetcher implements Fetcher
             if ($field === '*') {
                 $this->addSelectFields($table, $fields);
             } else {
-                $this->addSelectField($table, $field, $as);
+                $this->addSelectField($table, $field, $as, $modifier);
             }
 
             if ($join !== null) {
@@ -683,15 +699,20 @@ abstract class BaseFetcher implements Fetcher
         foreach ($fields as $field) {
             $as = null;
             if ($table !==  $this->table) $as = $table.'_'.$field;
-            $this->addSelectField($table, $field, $as);
+            $this->addSelectField($table, $field, $as, null);
         }
     }
 
-    private function addSelectField(string $table, string $field, ?string $as)
+    private function addSelectField(string $table, string $field, ?string $as, ?string $modifier)
     {
-        $selectString = sprintf('`%s`.`%s`%s', $table, $field, $as?' AS '.$as:'');
+        $fullField = sprintf('`%s`.`%s`', $table, $field);
+        if ($modifier === 'group') {
+            $fullField = sprintf('GROUP_CONCAT(%s)', $fullField);
+        }
+
+        $selectString = sprintf('%s%s', $fullField, $as?' AS '.$as:'');
         $this->select[] = $selectString;
-        $this->selectedFields[$as] = [$table, $field];
+        $this->selectedFields[$as] = [$table, $field, $modifier];
     }
 
     public function getSelect()
@@ -744,10 +765,21 @@ abstract class BaseFetcher implements Fetcher
 
     private function separateAs(string $field)
     {
-        if (preg_match('/(|^)([a-zA-Z._]+)( AS | as )([a-zA-Z]+)(|$)/', $field, $matches)){
+        if (preg_match('/(|^)([()a-zA-Z._]+)( AS | as )([a-zA-Z]+)(|$)/', $field, $matches)){
             return [
                 $matches[2],
                 $matches[4]
+            ];
+        }
+        return [$field, null];
+    }
+
+    private function separateModifier(string $field)
+    {
+        if (preg_match('/(|^)(group|)(\()(a-zA-Z._)(\))(|$)/', $field, $matches)){
+            return [
+                $matches[4],
+                $matches[2]
             ];
         }
         return [$field, null];
