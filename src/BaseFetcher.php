@@ -421,8 +421,9 @@ abstract class BaseFetcher implements Fetcher
         $joinString     = $this->getJoinString();
         $whereString    = $this->getWhereString($values);
         $limitString    = $this->limit?' LIMIT '.$this->limit:'';
+        $groupString    = $this->getGroupString();
 
-        $query = "SELECT " . $selectString . " FROM " . $this->table . $joinString . $whereString . $limitString;
+        $query = "SELECT " . $selectString . " FROM " . $this->table . $joinString . $whereString . $limitString . $groupString;
 
         $this->queryString = $query;
         $this->queryValues = $values;
@@ -499,6 +500,12 @@ abstract class BaseFetcher implements Fetcher
         $where = substr($fieldToStringClosure($this->fieldGroup), 1, -1);
 
         return empty($where)?'':' WHERE '.$where;
+    }
+
+    private function getGroupString()
+    {
+        if (!$this->needsGroupBy) return '';
+        return ' GROUP BY '.$this->groupBy;
     }
 
     /**
