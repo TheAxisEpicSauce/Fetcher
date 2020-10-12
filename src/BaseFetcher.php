@@ -423,7 +423,7 @@ abstract class BaseFetcher implements Fetcher
         $limitString    = $this->limit?' LIMIT '.$this->limit:'';
         $groupString    = $this->getGroupString();
 
-        $query = "SELECT " . $selectString . " FROM " . $this->table . $joinString . $whereString . $limitString . $groupString;
+        $query = "SELECT " . $selectString . " FROM " . $this->table . $joinString . $whereString . $groupString . $limitString;
 
         $this->queryString = $query;
         $this->queryValues = $values;
