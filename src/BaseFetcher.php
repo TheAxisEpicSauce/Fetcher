@@ -125,11 +125,13 @@ abstract class BaseFetcher implements Fetcher
 
     /**
      * BaseFetcher constructor.
+     * @param string|null $as
      * @throws Exception
      */
-    public function __construct()
+    public function __construct(?string $as = null)
     {
         if ($this->table === null) throw new Exception('table not set');
+        if ($as !== null) $this->table = $as;
         $this->fieldObjectValidator = new FieldObjectValidator();
     }
 
@@ -455,12 +457,18 @@ abstract class BaseFetcher implements Fetcher
                         '%s misses join method %s', $currentFetcher->getName(), $joinMethod
                     ));
 
-                    $js = $currentFetcher->{$joinMethod}();
-                    if (!is_array($js)) $js = [$js];
-                    foreach ($js as $j) $joinString .= ($joinToMake->isLeftJoin()?' LEFT':'').' JOIN '.$j;
-
                     $joinsMade[$tableFrom][] = $tableTo;
                     $fetcherTo = $currentFetcher->getJoins()[$tableTo];
+
+                    $js = $currentFetcher->{$joinMethod}();
+                    if (!is_array($js)) $js = [$js];
+                    foreach ($js as $j) {
+                        $type = $joinToMake->isLeftJoin()?'LEFT JOIN':'JOIN';
+                        $as = $fetcherTo::getTable()!==$tableTo?$fetcherTo::getTable().' AS '.$tableTo:$tableTo;
+
+                        $joinString .= sprintf('%s %s ON %s', $type, $as, $j);
+                    }
+
                     $this->tableFetcherLookup[$tableTo] = $currentFetcher = new $fetcherTo();
                 }
                 $tableFrom = $tableTo;
@@ -475,6 +483,8 @@ abstract class BaseFetcher implements Fetcher
         $fieldToStringClosure = function (Field $field) use (&$fieldToStringClosure, &$values) {
             if ($field instanceof FieldObject) {
                 $table = $field->getJoin()?$field->getJoin()->getFetcherClass()::getTable():$this::getTable();
+
+
                 if (is_array($field->getValue())) {
                     $marks = [];
                     foreach ($field->getValue() as $v) {$values[] = $v; $marks[] = '?';}
@@ -649,10 +659,10 @@ abstract class BaseFetcher implements Fetcher
 
     private static function getTable()
     {
-        if (array_key_exists(static::class, self::$tables)) self::$tables[static::class];
+//        if (array_key_exists(static::class, self::$tables)) self::$tables[static::class];
         $fetcher = new static();
         $table = $fetcher->table;
-        self::$tables[static::class] = $table;
+//        self::$tables[static::class] = $table;
         return $table;
     }
 
