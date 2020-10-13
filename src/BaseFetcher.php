@@ -466,7 +466,7 @@ abstract class BaseFetcher implements Fetcher
                         $type = $joinToMake->isLeftJoin()?'LEFT JOIN':'JOIN';
                         $as = $fetcherTo::getTable()!==$tableTo?$fetcherTo::getTable().' AS '.$tableTo:$tableTo;
 
-                        $joinString .= sprintf('%s %s ON %s', $type, $as, $j);
+                        $joinString .= sprintf(' %s %s ON %s', $type, $as, $j);
                     }
 
                     $this->tableFetcherLookup[$tableTo] = $currentFetcher = new $fetcherTo();
