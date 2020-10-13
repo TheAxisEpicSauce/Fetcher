@@ -694,7 +694,7 @@ abstract class BaseFetcher implements Fetcher
             if (strpos($field, '.') !== false) {
                 $tables = explode('.', $field);
                 $table = $tables[0];
-                $field = array_pop($table);
+                $field = array_pop($tables);
             } else {
                 $table = $this->table;
             }
