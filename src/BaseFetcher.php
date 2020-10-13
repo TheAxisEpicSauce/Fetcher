@@ -345,7 +345,7 @@ abstract class BaseFetcher implements Fetcher
 
     private $searchedFetchers = [];
 
-    private function findJoin($table, $availableJoins): ?Join
+    private function findJoin($tables, $availableJoins): ?Join
     {
         $this->searchedFetchers = [];
         if (!is_array($tables)) $tables = [$tables];
