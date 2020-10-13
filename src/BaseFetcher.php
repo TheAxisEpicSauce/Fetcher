@@ -348,18 +348,22 @@ abstract class BaseFetcher implements Fetcher
     private function findJoin($table, $availableJoins): ?Join
     {
         $this->searchedFetchers = [];
-        return $this->findJoinClosure($table, $availableJoins);
+        if (!is_array($tables)) $tables = [$tables];
+
+        return $this->findJoinClosure($tables, $availableJoins);
     }
 
-    private function findJoinClosure($table, $availableJoins): ?Join
+    private function findJoinClosure($tables, $availableJoins): ?Join
     {
+        $table = array_shift($tables);
+
         $availableJoins = array_diff($availableJoins, $this->searchedFetchers);
         foreach ($availableJoins as $availableJoin => $fetcherClass) {
             if (array_key_exists($table, $availableJoins)) {
-                return new Join($table, $availableJoins[$table]);
+                if (count($tables) === 0) return new Join($table, $availableJoins[$table]);
             }
 
-            $join = $this->findJoin($table, (new $fetcherClass)->getJoins());
+            $join = $this->findJoinClosure($tables, (new $fetcherClass)->getJoins());
             if ($join !== null) {
                 $join->prependPath($fetcherClass::getTable());
                 return $join;
