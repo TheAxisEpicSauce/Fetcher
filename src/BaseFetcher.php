@@ -692,7 +692,9 @@ abstract class BaseFetcher implements Fetcher
             if ($modifier === 'group') $this->needsGroupBy = true;
 
             if (strpos($field, '.') !== false) {
-                [$table, $field] = explode('.', $field);
+                $tables = explode('.', $field);
+                $table = $tables[0];
+                $field = array_pop($table);
             } else {
                 $table = $this->table;
             }
@@ -700,7 +702,7 @@ abstract class BaseFetcher implements Fetcher
             $join = null;
             if ($table === $this->table) {
                 $fields = array_keys($this->getFields());
-            } elseif ($join = $this->findJoin($table, $this->getJoins())) {
+            } elseif ($join = $this->findJoin($tables, $this->getJoins())) {
                 $class = $join->getFetcherClass();
                 $fields = array_keys((new $class)->getFields());
             } else {
