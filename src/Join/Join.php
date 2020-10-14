@@ -22,6 +22,10 @@ class Join
      * @var string
      */
     private $type;
+    /**
+     * @var array
+     */
+    private $tableMapping = [];
 
     /**
      * Join constructor.
@@ -86,5 +90,17 @@ class Join
     public function setFullJoin()
     {
         $this->type = 'full';
+    }
+
+
+    public function addTableMapping(string $table, string $as)
+    {
+        $this->tableMapping[$table] = $as;
+    }
+
+    public function getTableAs(string $table)
+    {
+        if (array_key_exists($table, $this->tableMapping)) return $this->tableMapping[$table];
+        return $table;
     }
 }

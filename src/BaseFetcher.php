@@ -344,11 +344,14 @@ abstract class BaseFetcher implements Fetcher
     }
 
     private $searchedFetchers = [];
+    private $fullJoinTable = null;
 
     private function findJoin($tables, $availableJoins): ?Join
     {
         $this->searchedFetchers = [];
         if (!is_array($tables)) $tables = [$tables];
+
+        $this->fullJoinTable = '';
 
         return $this->findJoinClosure($tables, $availableJoins);
     }
@@ -356,16 +359,22 @@ abstract class BaseFetcher implements Fetcher
     private function findJoinClosure($tables, $availableJoins): ?Join
     {
         $table = array_shift($tables);
+        $fullJoinTable = $this->fullJoinTable;
 
         $availableJoins = array_diff($availableJoins, $this->searchedFetchers);
         foreach ($availableJoins as $availableJoin => $fetcherClass) {
             if (array_key_exists($table, $availableJoins)) {
-                if (count($tables) === 0) return new Join($table, $availableJoins[$table]);
+                if (count($tables) === 0) {
+                    $join = new Join($table, $availableJoins[$table]);
+                    $join->addTableMapping($table, $this->fullJoinTable.$table);
+                    return $join;return new Join($table, $availableJoins[$table]);
+                }
             }
 
             $join = $this->findJoinClosure($tables, (new $fetcherClass)->getJoins());
             if ($join !== null) {
                 $join->prependPath($fetcherClass::getTable());
+                $join->addTableMapping($table, $fullJoinTable.$table);
                 return $join;
             } else {
                 $this->searchedFetchers[] = $fetcherClass;
@@ -454,6 +463,8 @@ abstract class BaseFetcher implements Fetcher
             $tableFrom = $this->table;
             $this->tableFetcherLookup[$tableFrom] = $this;
 
+            $tableAs = [];
+
             foreach ($joinToMake->getTables() as $tableTo) {
                 $joinMethod = 'join'.$this->studly($tableTo);
                 if (!array_key_exists($tableFrom, $joinsMade) || !in_array($tableTo, $joinsMade[$tableFrom])) {
@@ -468,7 +479,20 @@ abstract class BaseFetcher implements Fetcher
                     if (!is_array($js)) $js = [$js];
                     foreach ($js as $j) {
                         $type = $joinToMake->isLeftJoin()?'LEFT JOIN':'JOIN';
-                        $as = $fetcherTo::getTable()!==$tableTo?$fetcherTo::getTable().' AS '.$tableTo:$tableTo;
+                        $as = $tableTo;
+
+                        $tableTo = $joinToMake->getTableAs($tableTo);
+
+                        if ($fetcherTo::getTable()!==$tableTo) {
+                            $as = $fetcherTo::getTable().' AS '.$tableTo;
+                            $tableAs[$fetcherTo::getTable()] = $tableTo;
+                        }
+
+                        foreach ($tableAs as $tableA => $tableB) {
+                            $j = preg_replace(sprintf('/(\.)(%s)(\.)/', $tableA), '.'.$tableB.'.', $j);
+                            $j = preg_replace(sprintf('/(^)(%s)(\.)/', $tableA), $tableB.'.', $j);
+                            $j = preg_replace(sprintf('/( )(%s)(\.)/', $tableA), ' '.$tableB.'.', $j);
+                        }
 
                         $joinString .= sprintf(' %s %s ON %s', $type, $as, $j);
                     }
