@@ -301,7 +301,7 @@ abstract class BaseFetcher implements Fetcher
         $param($repo);
         $group = $repo->fieldGroup;
         foreach ($repo->joinsToMake as $joinToMake) {
-            $this->joinsToMake[$joinToMake->pathEnd()] = $joinToMake;
+            $this->joinsToMake[$joinToMake->pathEndAs()] = $joinToMake;
         }
         $this->fieldGroup->addField($group);
         return true;
@@ -338,7 +338,7 @@ abstract class BaseFetcher implements Fetcher
         $field->setValue($param);
         $this->fieldGroup->addField($field);
 
-        if ($join !== null) $this->joinsToMake[$join->pathEnd()] = $join;
+        if ($join !== null) $this->joinsToMake[$join->pathEndAs()] = $join;
 
         return true;
     }
@@ -713,12 +713,11 @@ abstract class BaseFetcher implements Fetcher
         $this->isRaw = true;
 
         foreach ($select as $field) {
-            $tables = null;
-
             [$field, $as] = $this->separateAs($field);
-
             [$field, $modifier] = $this->separateModifier($field);
             if ($modifier === 'group') $this->needsGroupBy = true;
+
+            $tables = null;
 
             if (strpos($field, '.') !== false) {
                 $tables = explode('.', $field);
@@ -751,10 +750,10 @@ abstract class BaseFetcher implements Fetcher
             }
 
             if ($join !== null) {
-                if (array_key_exists($join->pathEnd(), $this->joinsToMake)) {
-                    $this->joinsToMake[$join->pathEnd()]->setFullJoin();
+                if (array_key_exists($join->pathEndAs(), $this->joinsToMake)) {
+                    $this->joinsToMake[$join->pathEndAs()]->setFullJoin();
                 } else {
-                    $this->joinsToMake[$join->pathEnd()] = $join;
+                    $this->joinsToMake[$join->pathEndAs()] = $join;
                 }
             }
         }

@@ -54,6 +54,11 @@ class Join
         return array_pop($tables);
     }
 
+    public function pathEndAs()
+    {
+        return $this->getTableAs($this->pathEnd());
+    }
+
     public function pathLength()
     {
         return count($this->getTables());
