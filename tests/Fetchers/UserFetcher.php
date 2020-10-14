@@ -32,6 +32,6 @@ class UserFetcher extends BaseFetcher
 
     public function joinAddress()
     {
-        return 'address ON address.id = user.address_id';
+        return 'address.id = user.address_id';
     }
 }
