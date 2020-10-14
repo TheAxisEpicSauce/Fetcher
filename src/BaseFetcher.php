@@ -367,17 +367,16 @@ abstract class BaseFetcher implements Fetcher
                 if (count($tables) === 0) {
                     $join = new Join($table, $availableJoins[$table]);
                     $join->addTableMapping($table, $this->fullJoinTable.$table);
-                    return $join;return new Join($table, $availableJoins[$table]);
+                    return $join;
                 }
                 else $this->fullJoinTable .= $table.'_';
             } else {
                 $table = $fetcherClass::getTable();
             }
 
-
             $join = $this->findJoinClosure($tables, (new $fetcherClass)->getJoins());
             if ($join !== null) {
-                $join->prependPath($fetcherClass::getTable());
+                $join->prependPath($table);
                 $join->addTableMapping($table, $fullJoinTable.$table);
                 return $join;
             } else {
