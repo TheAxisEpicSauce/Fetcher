@@ -713,6 +713,8 @@ abstract class BaseFetcher implements Fetcher
         $this->isRaw = true;
 
         foreach ($select as $field) {
+            $tables = null;
+
             [$field, $as] = $this->separateAs($field);
 
             [$field, $modifier] = $this->separateModifier($field);
@@ -739,6 +741,8 @@ abstract class BaseFetcher implements Fetcher
             if (!in_array($field, $fields) && $field !== '*') {
                 throw new Exception(sprintf('Invalid field %s.%s', $table, $field));
             }
+
+            if ($tables !== null) $table = implode('_', $tables);
 
             if ($field === '*') {
                 $this->addSelectFields($table, $fields);
