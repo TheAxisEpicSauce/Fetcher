@@ -487,10 +487,10 @@ abstract class BaseFetcher implements Fetcher
                         $originalTable = $fetcherTo::getTable();
 
                         if (preg_match('/([a-zA-Z_]+)( AS | as | ON | on )([a-zA-Z_]+)( ON |)([ a-zA-Z._=]+)/', $j, $matches)) {
-                            if ($matches[2] === 'AS' || $matches[2] === 'as') {
+                            if ($matches[2] === ' AS ' || $matches[2] === ' as ') {
                                 $j = $matches[5];
                                 $tableTo = $matches[3];
-                            } elseif ($matches[2] === 'ON' || $matches[2] === 'on') {
+                            } elseif ($matches[2] === ' ON ' || $matches[2] === ' on ') {
                                 $j = $matches[3].$matches[5];
                                 $tableTo = $matches[1];
                             }
