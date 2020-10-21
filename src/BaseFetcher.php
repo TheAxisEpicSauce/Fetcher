@@ -495,6 +495,7 @@ abstract class BaseFetcher implements Fetcher
                             $originalTable = $matches[1];
                         }
 
+                        $as = $tableTo;
 
                         $tableTo = $joinToMake->getTableAs($tableTo);
 
