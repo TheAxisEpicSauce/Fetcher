@@ -482,13 +482,25 @@ abstract class BaseFetcher implements Fetcher
                     if (!is_array($js)) $js = [$js];
                     foreach ($js as $j) {
                         $type = $joinToMake->isLeftJoin()?'LEFT JOIN':'JOIN';
-                        $as = $tableTo;
+                        $originalTable = $fetcherTo::getTable();
+
+                        if (preg_match('/([a-zA-Z_]+)( AS | as | ON | on )([a-zA-Z_]+)( ON |)([ a-zA-Z._=]+)/', $j, $matches)) {
+                            if ($matches[2] === 'AS' || $matches[2] === 'as') {
+                                $j = $matches[5];
+                                $tableTo = $matches[3];
+                            } elseif ($matches[2] === 'ON' || $matches[2] === 'on') {
+                                $j = $matches[3].$matches[5];
+                                $tableTo = $matches[1];
+                            }
+                            $originalTable = $matches[1];
+                        }
+
 
                         $tableTo = $joinToMake->getTableAs($tableTo);
 
-                        if ($fetcherTo::getTable()!==$tableTo) {
-                            $as = $fetcherTo::getTable().' AS '.$tableTo;
-                            $tableAs[$fetcherTo::getTable()] = $tableTo;
+                        if ($originalTable!==$tableTo) {
+                            $as = $originalTable.' AS '.$tableTo;
+                            $tableAs[$originalTable] = $tableTo;
                         }
 
                         foreach ($tableAs as $tableA => $tableB) {
