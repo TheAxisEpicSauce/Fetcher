@@ -358,18 +358,22 @@ abstract class BaseFetcher implements Fetcher
 
     private function findJoinClosure($tables, $availableJoins): ?Join
     {
-        $table = array_shift($tables);
+        $table = $tables[0];
         $fullJoinTable = $this->fullJoinTable;
 
         $availableJoins = array_diff($availableJoins, $this->searchedFetchers);
+
         foreach ($availableJoins as $availableJoin => $fetcherClass) {
+            $this->searchedFetchers[] = $fetcherClass;
             if (array_key_exists($table, $availableJoins)) {
-                if (count($tables) === 0) {
+                if (count($tables) === 1) {
                     $join = new Join($table, $availableJoins[$table]);
                     $join->addTableMapping($table, $this->fullJoinTable.$table);
                     return $join;
+                } else {
+                    $table = array_shift($tables);
+                    $this->fullJoinTable .= $table.'_';
                 }
-                else $this->fullJoinTable .= $table.'_';
             } else {
                 $table = $fetcherClass::getTable();
             }
@@ -379,8 +383,6 @@ abstract class BaseFetcher implements Fetcher
                 $join->prependPath($table);
                 $join->addTableMapping($table, $fullJoinTable.$table);
                 return $join;
-            } else {
-                $this->searchedFetchers[] = $fetcherClass;
             }
         }
 
