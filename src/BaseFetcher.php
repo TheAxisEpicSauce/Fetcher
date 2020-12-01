@@ -122,6 +122,14 @@ abstract class BaseFetcher implements Fetcher
      * @var array
      */
     private $groupFields = [];
+    /**
+     * @var |null
+     */
+    private $orderByFields;
+    /**
+     * @var string
+     */
+    private $orderByDirection;
 
     /**
      * BaseFetcher constructor.
@@ -202,6 +210,8 @@ abstract class BaseFetcher implements Fetcher
         $this->needsGroupBy = true;
         $this->groupBy = $this->table.'.'.$this->key;
         $this->groupFields = [];
+        $this->orderByFields = null;
+        $this->orderByDirection = 'desc';
     }
 
     //-------------------------------------------
@@ -325,6 +335,7 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     private function handleJoin($fullField, $param, ?string $operator = null)
     {
+        if (!strpos($fullField, '.')) return false;
         [$table, $fullField] = explode('.', $fullField);
 
         $join = $this->findJoin($table, $this->getJoins());
@@ -442,6 +453,7 @@ abstract class BaseFetcher implements Fetcher
         $whereString    = $this->getWhereString($values);
         $limitString    = $this->limit?' LIMIT '.$this->limit:'';
         $groupString    = $this->getGroupString();
+        $orderByString  = $this->getOrderByString();
 
         $query = "SELECT " . $selectString . " FROM " . $this->table . $joinString . $whereString . $groupString . $limitString;
 
@@ -562,6 +574,14 @@ abstract class BaseFetcher implements Fetcher
     {
         if (!$this->needsGroupBy) return '';
         return ' GROUP BY '.$this->groupBy;
+    }
+
+    private function getOrderByString()
+    {
+        if ($this->orderByFields !== null && is_array($this->orderByFields) && !empty($this->orderByFields)) {
+            return ' ORDER BY '.implode(', ', $this->orderByFields). $this->orderByDirection==='desc'?' DESC':' ASC' ;
+        }
+        return '';
     }
 
     /**
@@ -806,11 +826,25 @@ abstract class BaseFetcher implements Fetcher
     public function limit(?int $limit)
     {
         $this->limit = $limit;
+        return $this;
     }
 
     public function getLimit()
     {
         return $this->limit;
+    }
+
+    public function groupBy(array $fields, string $direction)
+    {
+        $this->orderByFields = $fields;
+        $this->orderByDirection = $direction;
+        return $this;
+    }
+
+    public function clearGroupBy()
+    {
+        $this->orderByFields = null;
+        return $this;
     }
 
     //-------------------------------------------
