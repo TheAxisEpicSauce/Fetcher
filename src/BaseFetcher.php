@@ -199,7 +199,7 @@ abstract class BaseFetcher implements Fetcher
         $this->select();
         $this->queryString = null;
         $this->queryValues = null;
-        $this->needsGroupBy = null;
+        $this->needsGroupBy = true;
         $this->groupBy = $this->table.'.'.$this->key;
         $this->groupFields = [];
     }
