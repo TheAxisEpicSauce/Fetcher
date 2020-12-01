@@ -455,7 +455,7 @@ abstract class BaseFetcher implements Fetcher
         $groupString    = $this->getGroupString();
         $orderByString  = $this->getOrderByString();
 
-        $query = "SELECT " . $selectString . " FROM " . $this->table . $joinString . $whereString . $groupString . $limitString;
+        $query = "SELECT " . $selectString . " FROM " . $this->table . $joinString . $whereString . $groupString . $orderByString . $limitString;
 
         $this->queryString = $query;
         $this->queryValues = $values;
@@ -834,14 +834,14 @@ abstract class BaseFetcher implements Fetcher
         return $this->limit;
     }
 
-    public function groupBy(array $fields, string $direction)
+    public function orderBy(array $fields, string $direction)
     {
         $this->orderByFields = $fields;
         $this->orderByDirection = $direction;
         return $this;
     }
 
-    public function clearGroupBy()
+    public function clearOrderBy()
     {
         $this->orderByFields = null;
         return $this;
