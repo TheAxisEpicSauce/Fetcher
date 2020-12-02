@@ -653,6 +653,7 @@ abstract class BaseFetcher implements Fetcher
     {
         $this->select = ['count(*) as total'];
         $this->isRaw = true;
+        $this->needsGroupBy = false;
         $row = $this->first();
 
         return $row?$row['total']:0;
@@ -664,6 +665,7 @@ abstract class BaseFetcher implements Fetcher
 
         $this->select = ['sum('.$this->select[0].') as total'];
         $this->isRaw = true;
+        $this->needsGroupBy = false;
         $row = $this->first();
 
         return $row?$row['total']:0;
