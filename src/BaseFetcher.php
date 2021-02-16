@@ -579,7 +579,7 @@ abstract class BaseFetcher implements Fetcher
     private function getOrderByString()
     {
         if ($this->orderByFields !== null && is_array($this->orderByFields) && !empty($this->orderByFields)) {
-            return ' ORDER BY '.implode(', ', $this->orderByFields). $this->orderByDirection==='desc'?' DESC':' ASC' ;
+            return ' ORDER BY '.implode(', ', $this->orderByFields).($this->orderByDirection==='desc'?' DESC':' ASC');
         }
         return '';
     }
