@@ -629,12 +629,12 @@ abstract class BaseFetcher implements Fetcher
 
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $row = array_pop($rows);
+        if ($row === null) return null;
+
         if (count($this->groupFields) > 0) {
             foreach ($this->groupFields as $groupField)
-                $row[$groupField] = array_key_exists($groupField, $row)?explode(',', $row[$groupField]):[];
+            $row[$groupField] = array_key_exists($groupField, $row)?explode(',', $row[$groupField]):[];
         }
-
-        if ($row === null) return null;
 
         if ($this->isRaw) return $row;
         throw new Exception('@TODO');
