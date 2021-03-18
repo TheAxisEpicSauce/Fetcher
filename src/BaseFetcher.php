@@ -212,6 +212,79 @@ abstract class BaseFetcher implements Fetcher
         $this->groupFields = [];
         $this->orderByFields = null;
         $this->orderByDirection = 'desc';
+
+        $this->mapFetchers(get_class($this));
+    }
+
+    private $fetcherIds = [];
+    private $tableIds = [];
+    private $visitedFetchers = [];
+    private $fetcherNodes = [];
+    private $tableNodes = [];
+
+    private function mapFetchers(string $currentFetcher)
+    {
+        $currentId = $this->getFetcherId($currentFetcher);
+
+        $this->visitedFetchers[$currentId] = $currentFetcher;
+
+        $fetchers = (new $currentFetcher)->getJoins();
+
+        foreach ($fetchers as $table => $fetcher) {
+            $id = $this->getFetcherId($fetcher);
+            $this->fetcherNodes[$currentId] = $id;
+            $this->tableNodes[$id][$currentId] = $currentId;
+
+            if (array_key_exists($id, $this->visitedFetchers)) continue;
+
+            $this->mapFetchers($fetcher);
+        }
+    }
+
+    private function findTable(string $table): ?Join
+    {
+        $tableId = array_key_exists($table, $this->tableIds)?$this->tableIds[$table]:null;
+        if ($tableId === null) throw new Exception('table not found');
+
+        $baseId = $this->getFetcherId(get_class($this));
+
+        $join = null;
+
+        $list = $this->joinIdList($baseId, $tableId);
+        if ($list !== null) {
+            $fetchers = array_flip($this->fetcherIds);
+            $tables = array_flip($this->tableIds);
+            $list = array_reverse(explode('|', $list));
+            $id = array_shift($list);
+            $join = new Join($tables[$id], $fetchers[$id]);
+            foreach ($list as $id) {
+                $join->prependPath($tables[$id]);
+            }
+        }
+        return null;
+    }
+
+    private function joinIdList(int $fromId, int $toId): ?string
+    {
+        $ids = $this->tableNodes[$toId];
+        if (array_key_exists($fromId, $ids)) return "$fromId";
+
+        foreach ($ids as $id) {
+            $list = $this->joinIdList($fromId, $id);
+            if ($list === null) return null;
+            else return "$list|$id";
+        }
+        return null;
+    }
+
+
+    private function getFetcherId($fetcherClass): int
+    {
+        if (array_key_exists($fetcherClass, $this->fetcherIds)) return $this->fetcherIds[$fetcherClass];
+        static $id = 0; $id++;
+        $this->fetcherIds[$fetcherClass] = $id;
+        $this->tableIds[(new $fetcherClass)->table] = $id;
+        return $this->fetcherIds[$fetcherClass];
     }
 
     //-------------------------------------------
