@@ -207,8 +207,13 @@ abstract class BaseFetcher implements Fetcher
         $this->select();
         $this->queryString = null;
         $this->queryValues = null;
-        $this->needsGroupBy = true;
-        $this->groupBy = $this->table.'.'.$this->key;
+        if ($this->key !== null) {
+            $this->needsGroupBy = true;
+            $this->groupBy = $this->table.'.'.$this->key;
+        } else {
+            $this->needsGroupBy = false;
+            $this->groupBy = null;
+        }
         $this->groupFields = [];
         $this->orderByFields = null;
         $this->orderByDirection = 'desc';
