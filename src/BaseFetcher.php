@@ -241,7 +241,7 @@ abstract class BaseFetcher implements Fetcher
         }
     }
 
-    private function findTable(string $table): ?Join
+    private function findJoin(string $table): ?Join
     {
         $tableId = array_key_exists($table, $this->tableIds)?$this->tableIds[$table]:null;
         if ($tableId === null) throw new Exception('table not found');
@@ -251,28 +251,30 @@ abstract class BaseFetcher implements Fetcher
         $join = null;
 
         $list = $this->joinIdList($baseId, $tableId);
+
         if ($list !== null) {
             $fetchers = array_flip($this->fetcherIds);
             $tables = array_flip($this->tableIds);
             $list = array_reverse(explode('|', $list));
-            $id = array_shift($list);
-            $join = new Join($tables[$id], $fetchers[$id]);
+            $join = new Join($tables[$tableId], $fetchers[$tableId]);
             foreach ($list as $id) {
+                if (empty($id)) continue;
                 $join->prependPath($tables[$id]);
             }
         }
-        return null;
+
+        return $join;
     }
 
     private function joinIdList(int $fromId, int $toId): ?string
     {
         $ids = $this->tableNodes[$toId];
-        if (array_key_exists($fromId, $ids)) return "$fromId";
+        if (array_key_exists($fromId, $ids)) return "";
 
         foreach ($ids as $id) {
             $list = $this->joinIdList($fromId, $id);
             if ($list === null) return null;
-            else return "$list|$id";
+            else return "$list$id|";
         }
         return null;
     }
@@ -411,7 +413,7 @@ abstract class BaseFetcher implements Fetcher
         if (!strpos($fullField, '.')) return false;
         [$table, $fullField] = explode('.', $fullField);
 
-        $join = $this->findJoin($table, $this->getJoins());
+        $join = $this->findJoin($table);
         if (!$join) return false;
 
         $fetcherClass = $join->getFetcherClass();
@@ -430,7 +432,7 @@ abstract class BaseFetcher implements Fetcher
     private $searchedFetchers = [];
     private $fullJoinTable = null;
 
-    private function findJoin($tables, $availableJoins): ?Join
+    private function findJoinDeprecated($tables, $availableJoins): ?Join
     {
         $this->searchedFetchers = [];
         if (!is_array($tables)) $tables = [$tables];
@@ -840,7 +842,7 @@ abstract class BaseFetcher implements Fetcher
             $join = null;
             if ($table === $this->table) {
                 $fields = array_keys($this->getFields());
-            } elseif ($join = $this->findJoin($tables, $this->getJoins())) {
+            } elseif ($join = $this->findJoin($table)) {
                 $class = $join->getFetcherClass();
                 $fields = array_keys((new $class)->getFields());
             } else {
