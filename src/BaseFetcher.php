@@ -361,6 +361,7 @@ abstract class BaseFetcher implements Fetcher
                 $repo = $field['type']===FieldConjunction::OR?self::buildOr():self::buildAnd();
                 $repo->handleArray($field['fields']);
                 $this->fieldGroup->addField($repo->fieldGroup);
+                $this->joinsToMake = array_merge($this->joinsToMake, $repo->joinsToMake);
             } else {
                 throw new Exception('Cannot handle given field');
             }
