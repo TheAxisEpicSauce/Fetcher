@@ -131,6 +131,8 @@ abstract class BaseFetcher implements Fetcher
      */
     private $orderByDirection;
 
+    private $tableAs = [];
+
     /**
      * BaseFetcher constructor.
      * @param string|null $as
@@ -193,6 +195,9 @@ abstract class BaseFetcher implements Fetcher
         $fetcher = new static();
         $fetcher->isRaw = $isRaw;
         $fetcher->fieldGroup = new FieldGroup($data['type'], []);
+        foreach ($data['tables_as'] as $tableAs) {
+            $fetcher->addTableAs($tableAs['table'], $tableAs['as']);
+        }
         $fetcher->reset();
 
         $fields = $data['fields'];
@@ -207,8 +212,13 @@ abstract class BaseFetcher implements Fetcher
         $this->select();
         $this->queryString = null;
         $this->queryValues = null;
-        $this->needsGroupBy = true;
-        $this->groupBy = $this->table.'.'.$this->key;
+        if ($this->key !== null) {
+            $this->needsGroupBy = true;
+            $this->groupBy = $this->table.'.'.$this->key;
+        } else {
+            $this->needsGroupBy = false;
+            $this->groupBy = null;
+        }
         $this->groupFields = [];
         $this->orderByFields = null;
         $this->orderByDirection = 'desc';
@@ -241,8 +251,11 @@ abstract class BaseFetcher implements Fetcher
         }
     }
 
-    private function findTable(string $table): ?Join
+    private function findJoin(string $table): ?Join
     {
+        $tableAs = $table;
+        if (array_key_exists($table, $this->tableAs)) $table = $this->tableAs[$table];
+
         $tableId = array_key_exists($table, $this->tableIds)?$this->tableIds[$table]:null;
         if ($tableId === null) throw new Exception('table not found');
 
@@ -251,28 +264,31 @@ abstract class BaseFetcher implements Fetcher
         $join = null;
 
         $list = $this->joinIdList($baseId, $tableId);
+
         if ($list !== null) {
             $fetchers = array_flip($this->fetcherIds);
             $tables = array_flip($this->tableIds);
             $list = array_reverse(explode('|', $list));
-            $id = array_shift($list);
-            $join = new Join($tables[$id], $fetchers[$id]);
+            $join = new Join($tables[$tableId], $fetchers[$tableId]);
             foreach ($list as $id) {
+                if (empty($id)) continue;
                 $join->prependPath($tables[$id]);
             }
+            $join->addTableMapping($table, $tableAs);
         }
-        return null;
+
+        return $join;
     }
 
     private function joinIdList(int $fromId, int $toId): ?string
     {
         $ids = $this->tableNodes[$toId];
-        if (array_key_exists($fromId, $ids)) return "$fromId";
+        if (array_key_exists($fromId, $ids)) return "";
 
         foreach ($ids as $id) {
             $list = $this->joinIdList($fromId, $id);
             if ($list === null) return null;
-            else return "$list|$id";
+            else return "$list$id|";
         }
         return null;
     }
@@ -359,6 +375,7 @@ abstract class BaseFetcher implements Fetcher
                 $repo = $field['type']===FieldConjunction::OR?self::buildOr():self::buildAnd();
                 $repo->handleArray($field['fields']);
                 $this->fieldGroup->addField($repo->fieldGroup);
+                $this->joinsToMake = array_merge($this->joinsToMake, $repo->joinsToMake);
             } else {
                 throw new Exception('Cannot handle given field');
             }
@@ -411,7 +428,7 @@ abstract class BaseFetcher implements Fetcher
         if (!strpos($fullField, '.')) return false;
         [$table, $fullField] = explode('.', $fullField);
 
-        $join = $this->findJoin($table, $this->getJoins());
+        $join = $this->findJoin($table);
         if (!$join) return false;
 
         $fetcherClass = $join->getFetcherClass();
@@ -430,7 +447,7 @@ abstract class BaseFetcher implements Fetcher
     private $searchedFetchers = [];
     private $fullJoinTable = null;
 
-    private function findJoin($tables, $availableJoins): ?Join
+    private function findJoinDeprecated($tables, $availableJoins): ?Join
     {
         $this->searchedFetchers = [];
         if (!is_array($tables)) $tables = [$tables];
@@ -553,17 +570,19 @@ abstract class BaseFetcher implements Fetcher
             $tableFrom = $this->table;
             $this->tableFetcherLookup[$tableFrom] = $this;
 
-            $tableAs = [];
+            $tablesAs = [];
 
             foreach ($joinToMake->getTables() as $tableTo) {
                 $joinMethod = 'join'.$this->studly($tableTo);
-                if (!array_key_exists($tableFrom, $joinsMade) || !in_array($tableTo, $joinsMade[$tableFrom])) {
+
+                $tableAs = $joinToMake->getTableAs($tableTo);
+                $fetcherTo = $currentFetcher->getJoins()[$tableTo];
+
+                if (!array_key_exists($tableFrom, $joinsMade) || !in_array($tableAs, $joinsMade[$tableFrom])) {
                     if (!method_exists($currentFetcher, $joinMethod)) throw new Exception(sprintf(
                         '%s misses join method %s', $currentFetcher->getName(), $joinMethod
                     ));
-
-                    $joinsMade[$tableFrom][] = $tableTo;
-                    $fetcherTo = $currentFetcher->getJoins()[$tableTo];
+                    $joinsMade[$tableFrom][] = $tableAs;
 
                     $js = $currentFetcher->{$joinMethod}();
                     if (!is_array($js)) $js = [$js];
@@ -588,10 +607,10 @@ abstract class BaseFetcher implements Fetcher
 
                         if ($originalTable!==$tableTo) {
                             $as = $originalTable.' AS '.$tableTo;
-                            $tableAs[$originalTable] = $tableTo;
+                            $tablesAs[$originalTable] = $tableTo;
                         }
 
-                        foreach ($tableAs as $tableA => $tableB) {
+                        foreach ($tablesAs as $tableA => $tableB) {
                             $j = preg_replace(sprintf('/(\.)(%s)(\.)/', $tableA), '.'.$tableB.'.', $j);
                             $j = preg_replace(sprintf('/(^)(%s)(\.)/', $tableA), $tableB.'.', $j);
                             $j = preg_replace(sprintf('/( )(%s)(\.)/', $tableA), ' '.$tableB.'.', $j);
@@ -599,9 +618,8 @@ abstract class BaseFetcher implements Fetcher
 
                         $joinString .= sprintf(' %s %s ON %s', $type, $as, $j);
                     }
-
-                    $this->tableFetcherLookup[$tableTo] = $currentFetcher = new $fetcherTo();
                 }
+                $this->tableFetcherLookup[$tableTo] = $currentFetcher = new $fetcherTo();
                 $tableFrom = $tableTo;
             }
         }
@@ -613,8 +631,12 @@ abstract class BaseFetcher implements Fetcher
     {
         $fieldToStringClosure = function (Field $field) use (&$fieldToStringClosure, &$values) {
             if ($field instanceof FieldObject) {
-                $table = $field->getJoin()?$field->getJoin()->getFetcherClass()::getTable():$this::getTable();
-
+                $join = $field->getJoin();
+                if ($join !== null){
+                    $table = $join->getTableAs($join->getFetcherClass()::getTable());
+                } else {
+                    $table = $this::getTable();
+                }
 
                 if (is_array($field->getValue())) {
                     $marks = [];
@@ -706,7 +728,7 @@ abstract class BaseFetcher implements Fetcher
 
         if (count($this->groupFields) > 0) {
             foreach ($this->groupFields as $groupField)
-            $row[$groupField] = array_key_exists($groupField, $row)?explode(',', $row[$groupField]):[];
+                $row[$groupField] = array_key_exists($groupField, $row)?explode(',', $row[$groupField]):[];
         }
 
         if ($this->isRaw) return $row;
@@ -828,7 +850,6 @@ abstract class BaseFetcher implements Fetcher
             if ($modifier === 'group') $this->needsGroupBy = true;
 
             $tables = null;
-
             if (strpos($field, '.') !== false) {
                 $tables = explode('.', $field);
                 $table = $tables[0];
@@ -840,7 +861,7 @@ abstract class BaseFetcher implements Fetcher
             $join = null;
             if ($table === $this->table) {
                 $fields = array_keys($this->getFields());
-            } elseif ($join = $this->findJoin($tables, $this->getJoins())) {
+            } elseif ($join = $this->findJoin($table)) {
                 $class = $join->getFetcherClass();
                 $fields = array_keys((new $class)->getFields());
             } else {
@@ -874,7 +895,7 @@ abstract class BaseFetcher implements Fetcher
     {
         foreach ($fields as $field) {
             $as = null;
-            if ($table !==  $this->table) $as = $table.'_'.$field;
+            if ($table !== $this->table) $as = $table.'_'.$field;
             $this->addSelectField($table, $field, $as, null);
         }
     }
@@ -920,6 +941,11 @@ abstract class BaseFetcher implements Fetcher
     {
         $this->orderByFields = null;
         return $this;
+    }
+
+    public function addTableAs(string $table, string $as)
+    {
+        $this->tableAs[$as] = $table;
     }
 
     //-------------------------------------------
