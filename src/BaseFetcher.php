@@ -131,7 +131,7 @@ abstract class BaseFetcher implements Fetcher
      */
     private $orderByDirection;
 
-    private $tableAs = [];
+    private static $tableAs = [];
 
     /**
      * BaseFetcher constructor.
@@ -254,7 +254,7 @@ abstract class BaseFetcher implements Fetcher
     private function findJoin(string $table): ?Join
     {
         $tableAs = $table;
-        if (array_key_exists($table, $this->tableAs)) $table = $this->tableAs[$table];
+        if (array_key_exists($table, self::$tableAs)) $table = self::$tableAs[$table];
 
         $tableId = array_key_exists($table, $this->tableIds)?$this->tableIds[$table]:null;
         if ($tableId === null) throw new Exception('table not found');
@@ -945,7 +945,7 @@ abstract class BaseFetcher implements Fetcher
 
     public function addTableAs(string $table, string $as)
     {
-        $this->tableAs[$as] = $table;
+        self::$tableAs[$as] = $table;
     }
 
     //-------------------------------------------
