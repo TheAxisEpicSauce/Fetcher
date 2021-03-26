@@ -871,8 +871,9 @@ abstract class BaseFetcher implements Fetcher
             $tables = null;
             if (strpos($field, '.') !== false) {
                 $tables = explode('.', $field);
-                $table = $tables[0];
                 $field = array_pop($tables);
+                $table = array_pop($tables);
+                $tables[] = $table;
             } else {
                 $table = $this->table;
             }
@@ -880,7 +881,7 @@ abstract class BaseFetcher implements Fetcher
             $join = null;
             if ($table === $this->table) {
                 $fields = array_keys($this->getFields());
-            } elseif ($join = $this->findJoin($table)) {
+            } elseif ($join = $this->findJoin($tables)) {
                 $class = $join->getFetcherClass();
                 $fields = array_keys((new $class)->getFields());
             } else {
@@ -891,7 +892,7 @@ abstract class BaseFetcher implements Fetcher
                 throw new Exception(sprintf('Invalid field %s.%s', $table, $field));
             }
 
-            if ($tables !== null) $table = implode('_', $tables);
+//            if ($tables !== null) $table = implode('_', $tables);
 
             if ($field === '*') {
                 $this->addSelectFields($table, $fields);
