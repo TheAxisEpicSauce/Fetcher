@@ -131,7 +131,7 @@ abstract class BaseFetcher implements Fetcher
      */
     private $orderByDirection;
 
-    private static $tableAs = [];
+    private static $joinsAs = [];
 
     /**
      * BaseFetcher constructor.
@@ -195,8 +195,8 @@ abstract class BaseFetcher implements Fetcher
         $fetcher = new static();
         $fetcher->isRaw = $isRaw;
         $fetcher->fieldGroup = new FieldGroup($data['type'], []);
-        foreach ($data['tables_as'] as $tableAs) {
-            $fetcher->addTableAs($tableAs['table'], $tableAs['as']);
+        foreach ($data['joins_as'] as $joinAs) {
+            $fetcher->addJoinAs($joinAs['table'], $joinAs['as'], $joinAs['filter']);
         }
         $fetcher->reset();
 
@@ -251,20 +251,36 @@ abstract class BaseFetcher implements Fetcher
         }
     }
 
-    private function findJoin(string $table): ?Join
+    private function findJoin(array $tablePath): ?Join
     {
-        $tableAs = $table;
-        if (array_key_exists($table, self::$tableAs)) $table = self::$tableAs[$table];
+        $pathEnd = $tableAs = $table = array_pop($tablePath);
+        if (array_key_exists($table, self::$joinsAs)) $table = $pathEnd = self::$joinsAs[$table]['table'];
 
-        $tableId = array_key_exists($table, $this->tableIds)?$this->tableIds[$table]:null;
-        if ($tableId === null) throw new Exception('table not found');
+        $pathTraveled = false;
 
         $baseId = $this->getFetcherId(get_class($this));
 
+        $list = null;
+
+        do {
+            if (count($tablePath) > 0) {
+                $tableTo = array_shift($tablePath);
+            } else {
+                $tableTo = $pathEnd;
+                $pathTraveled = true;
+            }
+
+            if ($list !== null && $tableId !== null) $list .= $tableId.'|';
+
+            $tableId = array_key_exists($tableTo, $this->tableIds)?$this->tableIds[$tableTo]:null;
+            if ($tableId === null) throw new Exception(sprintf('table %s not found', $tableTo));
+
+            $list .= $this->joinIdList($baseId, $tableId);
+            $baseId = $tableId;
+
+        } while (!$pathTraveled);
+
         $join = null;
-
-        $list = $this->joinIdList($baseId, $tableId);
-
         if ($list !== null) {
             $fetchers = array_flip($this->fetcherIds);
             $tables = array_flip($this->tableIds);
@@ -426,9 +442,10 @@ abstract class BaseFetcher implements Fetcher
     private function handleJoin($fullField, $param, ?string $operator = null)
     {
         if (!strpos($fullField, '.')) return false;
-        [$table, $fullField] = explode('.', $fullField);
+        $tables = explode('.', $fullField);
+        $fullField = array_pop($tables);
 
-        $join = $this->findJoin($table);
+        $join = $this->findJoin($tables);
         if (!$join) return false;
 
         $fetcherClass = $join->getFetcherClass();
@@ -604,6 +621,8 @@ abstract class BaseFetcher implements Fetcher
                         $as = $tableTo;
 
                         $tableTo = $joinToMake->getTableAs($tableTo);
+                        $filter = array_key_exists($tableTo, self::$joinsAs)?self::$joinsAs[$tableTo]['filter']:null;
+                        if ($filter !== null) $j .= ' AND '.$tableTo.'.'.$filter;
 
                         if ($originalTable!==$tableTo) {
                             $as = $originalTable.' AS '.$tableTo;
@@ -633,7 +652,7 @@ abstract class BaseFetcher implements Fetcher
             if ($field instanceof FieldObject) {
                 $join = $field->getJoin();
                 if ($join !== null){
-                    $table = $join->getTableAs($join->getFetcherClass()::getTable());
+                    $table = $join->pathEndAs();
                 } else {
                     $table = $this::getTable();
                 }
@@ -688,7 +707,6 @@ abstract class BaseFetcher implements Fetcher
     public function get()
     {
         $this->buildQuery();
-
         $stmt = $this->getStatement();
 
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -698,6 +716,7 @@ abstract class BaseFetcher implements Fetcher
                     $rows[$index][$groupField] = array_key_exists($groupField, $row)?explode(',', $row[$groupField]):[];
             }
         }
+
         if ($this->isRaw) return $rows;
         throw new Exception('@TODO');
     }
@@ -943,9 +962,13 @@ abstract class BaseFetcher implements Fetcher
         return $this;
     }
 
-    public function addTableAs(string $table, string $as)
+    public function addJoinAs(string $table, string $as, ?string $filter)
     {
-        self::$tableAs[$as] = $table;
+        self::$joinsAs[$as] = [
+            'table' => $table,
+            'as' => $as,
+            'filter' => $filter
+        ];
     }
 
     //-------------------------------------------
