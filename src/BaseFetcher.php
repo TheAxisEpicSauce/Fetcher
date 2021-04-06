@@ -225,7 +225,7 @@ abstract class BaseFetcher implements Fetcher
         $this->orderByFields = null;
         $this->orderByDirection = 'desc';
 
-        $this->mapFetchers(get_class($this));
+        $this->mapFetchers(get_class($this), $this->table);
     }
 
     private $fetcherIds = [];
