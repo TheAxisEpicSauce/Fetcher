@@ -195,8 +195,10 @@ abstract class BaseFetcher implements Fetcher
         $fetcher = new static();
         $fetcher->isRaw = $isRaw;
         $fetcher->fieldGroup = new FieldGroup($data['type'], []);
-        foreach ($data['joins_as'] as $joinAs) {
-            $fetcher->addJoinAs($joinAs['table'], $joinAs['as'], $joinAs['filter']);
+        if (array_key_exists('joins_as', $data)) {
+            foreach ($data['joins_as'] as $joinAs) {
+                $fetcher->addJoinAs($joinAs['table'], $joinAs['as'], $joinAs['filter']);
+            }
         }
         $fetcher->reset();
 
@@ -231,23 +233,29 @@ abstract class BaseFetcher implements Fetcher
     private $visitedFetchers = [];
     private $fetcherNodes = [];
     private $tableNodes = [];
+    private $tableFetcherMap = [];
 
-    private function mapFetchers(string $currentFetcher)
+    private function mapFetchers(string $currentFetcher, string $currentTable)
     {
-        $currentId = $this->getFetcherId($currentFetcher);
+        $currentFetcherId = $this->getFetcherId($currentFetcher);
+        $currentTableId = $this->getTableId($currentTable);
 
-        $this->visitedFetchers[$currentId] = $currentFetcher;
+        $this->visitedFetchers[$currentFetcherId] = $currentFetcher;
 
         $fetchers = (new $currentFetcher)->getJoins();
 
         foreach ($fetchers as $table => $fetcher) {
-            $id = $this->getFetcherId($fetcher);
-            $this->fetcherNodes[$currentId] = $id;
-            $this->tableNodes[$id][$currentId] = $currentId;
+            $fetcherId = $this->getFetcherId($fetcher);
+            $tableId = $this->getTableId($table);
 
-            if (array_key_exists($id, $this->visitedFetchers)) continue;
+            $this->tableFetcherMap[$tableId] = $fetcherId;
 
-            $this->mapFetchers($fetcher);
+            $this->fetcherNodes[$currentFetcherId] = $fetcherId;
+            $this->tableNodes[$tableId][$currentTableId] = $currentTableId;
+
+            if (array_key_exists($fetcherId, $this->visitedFetchers)) continue;
+
+            $this->mapFetchers($fetcher, $table);
         }
     }
 
@@ -258,10 +266,10 @@ abstract class BaseFetcher implements Fetcher
 
         $pathTraveled = false;
 
-        $baseId = $this->getFetcherId(get_class($this));
+        $baseId = $this->getTableId($this->table);
 
         $list = null;
-
+        $tableId = null;
         do {
             if (count($tablePath) > 0) {
                 $tableTo = array_shift($tablePath);
@@ -285,7 +293,7 @@ abstract class BaseFetcher implements Fetcher
             $fetchers = array_flip($this->fetcherIds);
             $tables = array_flip($this->tableIds);
             $list = array_reverse(explode('|', $list));
-            $join = new Join($tables[$tableId], $fetchers[$tableId]);
+            $join = new Join($tables[$tableId], $fetchers[$this->tableFetcherMap[$tableId]]);
             foreach ($list as $id) {
                 if (empty($id)) continue;
                 $join->prependPath($tables[$id]);
@@ -312,11 +320,22 @@ abstract class BaseFetcher implements Fetcher
 
     private function getFetcherId($fetcherClass): int
     {
-        if (array_key_exists($fetcherClass, $this->fetcherIds)) return $this->fetcherIds[$fetcherClass];
-        static $id = 0; $id++;
-        $this->fetcherIds[$fetcherClass] = $id;
-        $this->tableIds[(new $fetcherClass)->table] = $id;
+        if (!array_key_exists($fetcherClass, $this->fetcherIds)) {
+            static $fetcherId = 0; $fetcherId++;
+            $this->fetcherIds[$fetcherClass] = $fetcherId;
+        };
+
         return $this->fetcherIds[$fetcherClass];
+    }
+
+    private function getTableId($table): int
+    {
+        if (!array_key_exists($table, $this->tableIds)) {
+            static $tableId = 0; $tableId++;
+            $this->tableIds[$table] = $tableId;
+        };
+
+        return $this->tableIds[$table];
     }
 
     //-------------------------------------------
