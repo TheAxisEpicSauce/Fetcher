@@ -270,9 +270,16 @@ abstract class BaseFetcher implements Fetcher
 
         $list = null;
         $tableId = null;
+
+        $tableMappings = [];
+
         do {
             if (count($tablePath) > 0) {
                 $tableTo = array_shift($tablePath);
+
+                if (array_key_exists($tableTo, self::$joinsAs)) {
+                    $tableTo = $tableMappings[$tableTo] = self::$joinsAs[$tableTo]['table'];
+                }
             } else {
                 $tableTo = $pathEnd;
                 $pathTraveled = true;
@@ -297,6 +304,9 @@ abstract class BaseFetcher implements Fetcher
             foreach ($list as $id) {
                 if (empty($id)) continue;
                 $join->prependPath($tables[$id]);
+            }
+            foreach ($tableMappings as $a => $b) {
+                $join->addTableMapping($a, $b);
             }
             $join->addTableMapping($table, $tableAs);
         }
@@ -656,6 +666,8 @@ abstract class BaseFetcher implements Fetcher
 
                         $joinString .= sprintf(' %s %s ON %s', $type, $as, $j);
                     }
+                } else {
+                    $tableTo = $tableAs;
                 }
                 $this->tableFetcherLookup[$tableTo] = $currentFetcher = new $fetcherTo();
                 $tableFrom = $tableTo;
