@@ -306,7 +306,7 @@ abstract class BaseFetcher implements Fetcher
                 $join->prependPath($tables[$id]);
             }
             foreach ($tableMappings as $a => $b) {
-                $join->addTableMapping($a, $b);
+                $join->addTableMapping($b, $a);
             }
             $join->addTableMapping($table, $tableAs);
         }
