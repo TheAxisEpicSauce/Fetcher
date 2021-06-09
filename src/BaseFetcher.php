@@ -214,7 +214,7 @@ abstract class BaseFetcher implements Fetcher
         $this->queryValues = null;
         if ($this->key !== null) {
             $this->needsGroupBy = true;
-            $this->groupBy = $this->table.'.'.$this->key;
+            $this->groupBy = "`$this->table`".'.'.$this->key;
         } else {
             $this->needsGroupBy = false;
             $this->groupBy = null;
@@ -545,7 +545,7 @@ abstract class BaseFetcher implements Fetcher
         $groupString    = $this->getGroupString();
         $orderByString  = $this->getOrderByString();
 
-        $query = "SELECT " . $selectString . " FROM " . $this->table . $joinString . $whereString . $groupString . $orderByString . $limitString;
+        $query = "SELECT " . $selectString . " FROM " . "`$this->table`" . $joinString . $whereString . $groupString . $orderByString . $limitString;
 
         $this->queryString = $query;
         $this->queryValues = $values;
