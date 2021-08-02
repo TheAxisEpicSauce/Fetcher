@@ -636,7 +636,7 @@ abstract class BaseFetcher implements Fetcher
                         $type = $joinToMake->isLeftJoin()?'LEFT JOIN':'JOIN';
                         $originalTable = $fetcherTo::getTable();
 
-                        if (preg_match('/([a-zA-Z_`]+)( AS | as | ON | on )([`a-zA-Z_]+)( ON |)([ a-zA-Z._=\'`]+)/', $j, $matches)) {
+                        if (preg_match('/([a-zA-Z_`]+)( AS | as | ON | on )([`a-zA-Z_]+)( ON |)([ a-zA-Z._=\'`"]+)/', $j, $matches)) {
                             if ($matches[2] === ' AS ' || $matches[2] === ' as ') {
                                 $j = $matches[5];
                                 $tableTo = $matches[3];
