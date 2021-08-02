@@ -845,14 +845,14 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     // Private
     //-------------------------------------------
-    protected abstract function getFields(): array;
+    public abstract function getFields(): array;
 
     private function getFieldType(string $field)
     {
         return $this->getFields()[$field];
     }
 
-    protected abstract function getJoins(): array;
+    public abstract function getJoins(): array;
 
     private function getFieldPrefixRegex()
     {
@@ -872,10 +872,8 @@ abstract class BaseFetcher implements Fetcher
 
     private static function getTable()
     {
-//        if (array_key_exists(static::class, self::$tables)) self::$tables[static::class];
         $fetcher = new static();
         $table = $fetcher->table;
-//        self::$tables[static::class] = $table;
         return $table;
     }
 
