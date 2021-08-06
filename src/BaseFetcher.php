@@ -599,7 +599,7 @@ abstract class BaseFetcher implements Fetcher
 
     private function getSelectString()
     {
-        return $this->select?implode(', ', $this->select):$this->table.'.*';
+        return $this->select?implode(', ', $this->select):"`$this->table`".'.*';
     }
 
     private function getJoinString()
