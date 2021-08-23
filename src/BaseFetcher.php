@@ -1080,7 +1080,7 @@ abstract class BaseFetcher implements Fetcher
 
         if (array_key_exists($table, $this->parseFunctions)) {
             if (array_key_exists($field, $this->parseFunctions[$table])) {
-                if ($this->parseFunctions[$table][$field] === false)return false;
+                if ($this->parseFunctions[$table][$field] === null) return false;
                 return true;
             }
         }
@@ -1088,12 +1088,24 @@ abstract class BaseFetcher implements Fetcher
         $method = 'parse'.$this->studly($field).'Field';
 
         $exists = method_exists($this->tableFetcherLookup[$table], $method);
-        $this->parseFunctions[$table][$field] = $exists;
+        $this->parseFunctions[$table][$field] = $exists?$method:null;
         return $exists;
     }
 
     private function parseField(string $field, $value)
     {
+        [$table, $field] = $this->explodeTableField($field);
 
+        if (!$this->hasParseMethod($field)) return $value;
+
+        $function = $this->parseFunctions[$table][$field];
+
+        if (is_string($function)) {
+            return (new $this->tableFetcherLookup[$table])->{$function}($value);
+        } elseif ($function instanceof Closure) {
+            return $function($value);
+        }
+
+        return $value;
     }
 }
