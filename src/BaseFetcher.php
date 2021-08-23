@@ -956,7 +956,7 @@ abstract class BaseFetcher implements Fetcher
 
         $selectString = sprintf('%s%s', $fullField, $as?' AS '.$as:'');
         $this->select[] = $selectString;
-        $this->selectedFields[$as] = [$table, $field, $modifier];
+        $this->selectedFields[$as?:$field] = [$table, $field, $modifier];
     }
 
     public function getSelect()
@@ -1052,11 +1052,15 @@ abstract class BaseFetcher implements Fetcher
         return [$field, null];
     }
 
-    private $parseFunctions = [];
+    //-------------------------------------------
+    // Table field helper
+    //-------------------------------------------
+    private $tableFields = [];
 
     private function explodeTableField(string $field)
     {
-        $field = $this->snake($field);
+        if (array_key_exists($field, $this->tableFields)) return $this->tableFields[$field];
+
         $pos = strpos($field, '.');
         if ($pos === false) {
             [$table, $field] = explode('.', $field);
@@ -1064,8 +1068,15 @@ abstract class BaseFetcher implements Fetcher
             $table = $this->table;
         }
 
+        $this->tableFields[$field] = [$table, $field];
+
         return [$table, $field];
     }
+
+    //-------------------------------------------
+    // Field Parsing
+    //-------------------------------------------
+    private $parseFunctions = [];
 
     private function addParseClosure(string $field, Closure $closure)
     {
