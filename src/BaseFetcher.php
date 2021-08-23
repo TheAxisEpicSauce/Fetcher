@@ -99,10 +99,6 @@ abstract class BaseFetcher implements Fetcher
      */
     private $tableFetcherLookup;
     /**
-     * @var array|string[]
-     */
-    private $parseMethods;
-    /**
      * @var null|int
      */
     private $limit;
@@ -1056,16 +1052,48 @@ abstract class BaseFetcher implements Fetcher
         return [$field, null];
     }
 
-    private function hasParseMethod(string $table, string $field)
-    {
-        $field = $this->studly($field);
-        $method = 'parse'.$field.'Field';
-        $index = $table.'.'.$field;
+    private $parseFunctions = [];
 
-        if (array_key_exists($index, $this->parseMethods)) $this->parseMethods[$index];
+    private function explodeTableField(string $field)
+    {
+        $field = $this->snake($field);
+        $pos = strpos($field, '.');
+        if ($pos === false) {
+            [$table, $field] = explode('.', $field);
+        } else {
+            $table = $this->table;
+        }
+
+        return [$table, $field];
+    }
+
+    private function addParseClosure(string $field, Closure $closure)
+    {
+        [$table, $field] = $this->explodeTableField($field);
+
+        $this->parseFunctions[$table][$field] = $closure;
+    }
+
+    private function hasParseMethod(string $field)
+    {
+        [$table, $field] = $this->explodeTableField($field);
+
+        if (array_key_exists($table, $this->parseFunctions)) {
+            if (array_key_exists($field, $this->parseFunctions[$table])) {
+                if ($this->parseFunctions[$table][$field] === false)return false;
+                return true;
+            }
+        }
+
+        $method = 'parse'.$this->studly($field).'Field';
 
         $exists = method_exists($this->tableFetcherLookup[$table], $method);
-        $this->parseMethods[$index] = $exists;
+        $this->parseFunctions[$table][$field] = $exists;
         return $exists;
+    }
+
+    private function parseField(string $field, $value)
+    {
+
     }
 }
