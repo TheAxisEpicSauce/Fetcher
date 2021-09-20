@@ -26,7 +26,7 @@ abstract class MySqlFetcher extends BaseFetcher
         $joinString     = $this->getJoinString();
         $whereString    = $this->getWhereString($values);
         $limitString    = $this->limit?' LIMIT '.$this->limit:'';
-        $groupString    = $this->getGroupString();
+        $groupString    = $this->getGroupByString();
         $orderByString  = $this->getOrderByString();
 
         $query = "SELECT " . $selectString . " FROM " . "`$this->table`" . $joinString . $whereString . $groupString . $orderByString . $limitString;
@@ -153,17 +153,35 @@ abstract class MySqlFetcher extends BaseFetcher
         return empty($where)?'':' WHERE '.$where;
     }
 
-    private function getGroupString()
+    private function getGroupByString()
     {
-        if (!$this->needsGroupBy) return '';
-        return ' GROUP BY '.$this->groupBy;
+        if ($this->groupByFields === null) return '';
+        $string = null;
+        foreach ($this->groupByFields as $table => $fields) {
+            foreach ($fields as $field) {
+                if ($string === null) {
+                    $string = " GROUP BY `$table`.`$field`";
+                } else {
+                    $string .= ", `$table`.`$field`";
+                }
+            }
+        }
+        return $string;
     }
 
     private function getOrderByString()
     {
-        if ($this->orderByFields !== null && is_array($this->orderByFields) && !empty($this->orderByFields)) {
-            return ' ORDER BY '.implode(', ', $this->orderByFields).($this->orderByDirection==='desc'?' DESC':' ASC');
+        if ($this->orderByFields === null) return '';
+        $string = null;
+        foreach ($this->groupByFields as $field) {
+            [$table, $field] = $this->explodeTableField($field);
+
+            if ($string === null) {
+                $string = " ORDER BY `$table`.`$field`";
+            } else {
+                $string .= ", `$table`.`$field`";
+            }
         }
-        return '';
+        return $string . ($this->orderByDirection==='desc'?' DESC':' ASC');
     }
 }

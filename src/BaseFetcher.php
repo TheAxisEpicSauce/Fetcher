@@ -63,10 +63,6 @@ abstract class BaseFetcher implements Fetcher
      */
     protected $key = 'id';
     /**
-     * @var null
-     */
-    protected $model = null;
-    /**
      * @var null|FieldGroup
      */
     protected $fieldGroup = null;
@@ -107,17 +103,17 @@ abstract class BaseFetcher implements Fetcher
      */
     protected $needsGroupBy = false;
     /**
-     * @var null|string|array
+     * @var null|array
      */
-    protected $groupBy = null;
+    protected $groupByFields = null;
+    /**
+     * @var null|array
+     */
+    protected $orderByFields;
     /**
      * @var array
      */
-    private $groupFields = [];
-    /**
-     * @var |null
-     */
-    protected $orderByFields;
+    private $groupedFields = [];
     /**
      * @var string
      */
@@ -165,8 +161,9 @@ abstract class BaseFetcher implements Fetcher
     public static function buildAnd(): self
     {
         $fetcher = new static();
-        $fetcher->fieldGroup = new FieldGroup(FieldConjunction::AND, []);
         $fetcher->reset();
+
+        $fetcher->fieldGroup = new FieldGroup(FieldConjunction::AND, []);
 
         return $fetcher;
     }
@@ -174,8 +171,9 @@ abstract class BaseFetcher implements Fetcher
     public static function buildOr(): self
     {
         $fetcher = new static();
-        $fetcher->fieldGroup = new FieldGroup(FieldConjunction::OR, []);
         $fetcher->reset();
+
+        $fetcher->fieldGroup = new FieldGroup(FieldConjunction::OR, []);
 
         return $fetcher;
     }
@@ -183,13 +181,15 @@ abstract class BaseFetcher implements Fetcher
     public static function buildFromArray(array $data)
     {
         $fetcher = new static();
+        $fetcher->reset();
+
         $fetcher->fieldGroup = new FieldGroup($data['type'], []);
+
         if (array_key_exists('joins_as', $data)) {
             foreach ($data['joins_as'] as $joinAs) {
                 $fetcher->addJoinAs($joinAs['table'], $joinAs['as'], $joinAs['filter']);
             }
         }
-        $fetcher->reset();
 
         $fields = $data['fields'];
         $fetcher->handleArray($fields);
@@ -203,14 +203,15 @@ abstract class BaseFetcher implements Fetcher
         $this->select();
         $this->queryString = null;
         $this->queryValues = null;
+
         if ($this->key !== null) {
-            $this->needsGroupBy = true;
-            $this->groupBy = "`$this->table`".'.'.$this->key;
+            $this->groupByFields[$this->table][] = $this->key;
         } else {
-            $this->needsGroupBy = false;
-            $this->groupBy = null;
+            $this->groupByFields = null;
         }
-        $this->groupFields = [];
+
+        $this->groupedFields = [];
+
         $this->orderByFields = null;
         $this->orderByDirection = 'desc';
 
@@ -474,7 +475,7 @@ abstract class BaseFetcher implements Fetcher
         $field->setValue($param);
         $this->fieldGroup->addField($field);
 
-        if ($join !== null) $this->joinsToMake[$join->pathEndAs()] = $join;
+        $this->joinsToMake[$join->pathEndAs()] = $join;
 
         return true;
     }
@@ -583,9 +584,9 @@ abstract class BaseFetcher implements Fetcher
         $stmt = $this->getStatement();
 
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        if (count($this->groupFields) > 0) {
+        if (count($this->groupedFields) > 0) {
             foreach ($rows as $index => $row) {
-                foreach ($this->groupFields as $groupField)
+                foreach ($this->groupedFields as $groupField)
                     $rows[$index][$groupField] = array_key_exists($groupField, $row)?explode(',', $row[$groupField]):[];
             }
         }
@@ -616,8 +617,8 @@ abstract class BaseFetcher implements Fetcher
         $row = array_pop($rows);
         if ($row === null) return null;
 
-        if (count($this->groupFields) > 0) {
-            foreach ($this->groupFields as $groupField)
+        if (count($this->groupedFields) > 0) {
+            foreach ($this->groupedFields as $groupField)
                 $row[$groupField] = array_key_exists($groupField, $row)?explode(',', $row[$groupField]):[];
         }
 
@@ -790,7 +791,7 @@ abstract class BaseFetcher implements Fetcher
         if ($modifier === 'group') {
             $fullField = sprintf('GROUP_CONCAT(%s)', $fullField);
             $as = $as?:$field;
-            $this->groupFields[] = $as;
+            $this->groupedFields[] = $as;
         }
 
         $selectString = sprintf('%s%s', $fullField, $as?' AS '.$as:'');
@@ -816,6 +817,7 @@ abstract class BaseFetcher implements Fetcher
 
     public function orderBy(array $fields, string $direction)
     {
+        if (empty($fields)) return $this->clearOrderBy();
         $this->orderByFields = $fields;
         $this->orderByDirection = $direction;
         return $this;
@@ -896,9 +898,11 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     private $tableFields = [];
 
-    private function explodeTableField(string $field)
+    protected function explodeTableField(string $field)
     {
         if (array_key_exists($field, $this->tableFields)) return $this->tableFields[$field];
+
+        $field = str_replace('`', '', $field);
 
         $pos = strpos($field, '.');
         if ($pos === false) {
