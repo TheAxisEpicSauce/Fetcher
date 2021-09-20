@@ -173,13 +173,13 @@ abstract class MySqlFetcher extends BaseFetcher
     {
         if ($this->orderByFields === null) return '';
         $string = null;
-        foreach ($this->groupByFields as $field) {
-            [$table, $field] = $this->explodeTableField($field);
-
-            if ($string === null) {
-                $string = " ORDER BY `$table`.`$field`";
-            } else {
-                $string .= ", `$table`.`$field`";
+        foreach ($this->groupByFields as $table => $fields) {
+            foreach ($fields as $field) {
+                if ($string === null) {
+                    $string = " ORDER BY `$table`.`$field`";
+                } else {
+                    $string .= ", `$table`.`$field`";
+                }
             }
         }
         return $string . ($this->orderByDirection==='desc'?' DESC':' ASC');

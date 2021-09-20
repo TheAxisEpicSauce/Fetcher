@@ -200,17 +200,19 @@ abstract class BaseFetcher implements Fetcher
     private function reset()
     {
         $this->joinsToMake = [];
+
         $this->select();
+
         $this->queryString = null;
         $this->queryValues = null;
+
+        $this->groupedFields = [];
 
         if ($this->key !== null) {
             $this->groupByFields[$this->table][] = $this->key;
         } else {
             $this->groupByFields = null;
         }
-
-        $this->groupedFields = [];
 
         $this->orderByFields = null;
         $this->orderByDirection = 'desc';
@@ -818,7 +820,10 @@ abstract class BaseFetcher implements Fetcher
     public function orderBy(array $fields, string $direction)
     {
         if (empty($fields)) return $this->clearOrderBy();
-        $this->orderByFields = $fields;
+        foreach ($fields as $field) {
+            [$table, $field] = $this->explodeTableField($field);
+            $this->orderByFields[$table][] = $field;
+        }
         $this->orderByDirection = $direction;
         return $this;
     }
