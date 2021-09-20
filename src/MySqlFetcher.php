@@ -15,9 +15,20 @@ use Fetcher\Field\FieldGroup;
 use Fetcher\Field\FieldObject;
 use Fetcher\Field\Operator;
 use Fetcher\Join\Join;
+use PDO;
 
 abstract class MySqlFetcher extends BaseFetcher
 {
+    /**
+     * @param PDO $connection
+     * @throws Exception
+     */
+    public static function setConnection($connection): void
+    {
+        if (!$connection instanceof PDO) throw new Exception('invalid connection type');
+        self::$connection = $connection;
+    }
+
     protected function buildQuery()
     {
         $values = [];
@@ -33,6 +44,21 @@ abstract class MySqlFetcher extends BaseFetcher
 
         $this->queryString = $query;
         $this->queryValues = $values;
+
+        if (!$this->isValidBuild()) {
+            throw new Exception();
+        }
+    }
+
+    protected function executeQuery(): array
+    {
+        if (self::$connection === null) throw new Exception('Connection not set');
+        $pdo = self::$connection;
+
+        $stmt = $pdo->prepare($this->queryString);
+        $stmt->execute($this->queryValues);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     private function getSelectString()
@@ -63,9 +89,13 @@ abstract class MySqlFetcher extends BaseFetcher
                 $fetcherTo = $currentFetcher->getJoins()[$tableTo];
 
                 if (!array_key_exists($tableFrom, $joinsMade) || !in_array($tableAs, $joinsMade[$tableFrom])) {
-                    if (!method_exists($currentFetcher, $joinMethod)) throw new Exception(sprintf(
-                        '%s misses join method %s', $currentFetcher->getName(), $joinMethod
-                    ));
+                    if (!method_exists($currentFetcher, $joinMethod)) {
+                        $this->addBuildError(sprintf(
+                            '%s misses join method %s', $currentFetcher->getName(), $joinMethod
+                        ));
+                        continue;
+                    }
+
                     $joinsMade[$tableFrom][] = $tableAs;
 
                     $js = $currentFetcher->{$joinMethod}();

@@ -133,21 +133,11 @@ abstract class BaseFetcher implements Fetcher
         $this->fieldObjectValidator = new FieldObjectValidator();
     }
 
-    /**
-     * @param PDO $connection
-     */
-    public static function setConnection(PDO $connection): void
-    {
-        self::$connection = $connection;
-    }
+    public abstract static function setConnection($connection): void;
 
-    public function getName(): ?string
+    public function getName(): string
     {
-        try {
-            return (new ReflectionClass($this))->getShortName();
-        } catch (\ReflectionException $e) {
-            return null;
-        }
+        return str_replace(['/', '\\'], '.', get_class($this));
     }
 
     //-------------------------------------------
@@ -161,6 +151,8 @@ abstract class BaseFetcher implements Fetcher
     public static function buildAnd(): self
     {
         $fetcher = new static();
+        $fetcher->mapFetchers(get_class($fetcher), $fetcher->table);
+
         $fetcher->reset();
 
         $fetcher->fieldGroup = new FieldGroup(FieldConjunction::AND, []);
@@ -171,6 +163,8 @@ abstract class BaseFetcher implements Fetcher
     public static function buildOr(): self
     {
         $fetcher = new static();
+        $fetcher->mapFetchers(get_class($fetcher), $fetcher->table);
+
         $fetcher->reset();
 
         $fetcher->fieldGroup = new FieldGroup(FieldConjunction::OR, []);
@@ -181,6 +175,8 @@ abstract class BaseFetcher implements Fetcher
     public static function buildFromArray(array $data)
     {
         $fetcher = new static();
+        $fetcher->mapFetchers(get_class($fetcher), $fetcher->table);
+
         $fetcher->reset();
 
         $fetcher->fieldGroup = new FieldGroup($data['type'], []);
@@ -201,8 +197,6 @@ abstract class BaseFetcher implements Fetcher
     {
         $this->joinsToMake = [];
 
-        $this->select();
-
         $this->queryString = null;
         $this->queryValues = null;
 
@@ -217,9 +211,12 @@ abstract class BaseFetcher implements Fetcher
         $this->orderByFields = null;
         $this->orderByDirection = 'desc';
 
-        $this->mapFetchers(get_class($this), $this->table);
+        $this->select();
     }
 
+    //-------------------------------------------
+    // Fetcher mapping
+    //-------------------------------------------
     private $fetcherIds = [];
     private $tableIds = [];
     private $visitedFetchers = [];
@@ -249,61 +246,6 @@ abstract class BaseFetcher implements Fetcher
 
             $this->mapFetchers($fetcher, $table);
         }
-    }
-
-    private function findJoin(array $tablePath): ?Join
-    {
-        $pathEnd = $tableAs = $table = array_pop($tablePath);
-        if (array_key_exists($table, self::$joinsAs)) $table = $pathEnd = self::$joinsAs[$table]['table'];
-
-        $pathTraveled = false;
-
-        $baseId = $this->getTableId($this->table);
-
-        $list = null;
-        $tableId = null;
-
-        $tableMappings = [];
-
-        do {
-            if (count($tablePath) > 0) {
-                $tableTo = array_shift($tablePath);
-
-                if (array_key_exists($tableTo, self::$joinsAs)) {
-                    $tableTo = $tableMappings[$tableTo] = self::$joinsAs[$tableTo]['table'];
-                }
-            } else {
-                $tableTo = $pathEnd;
-                $pathTraveled = true;
-            }
-
-            if ($list !== null && $tableId !== null) $list .= $tableId.'|';
-
-            $tableId = array_key_exists($tableTo, $this->tableIds)?$this->tableIds[$tableTo]:null;
-            if ($tableId === null) throw new Exception(sprintf('table %s not found', $tableTo));
-
-            $list .= $this->joinIdList($baseId, $tableId);
-            $baseId = $tableId;
-
-        } while (!$pathTraveled);
-
-        $join = null;
-        if ($list !== null) {
-            $fetchers = array_flip($this->fetcherIds);
-            $tables = array_flip($this->tableIds);
-            $list = array_reverse(explode('|', $list));
-            $join = new Join($tables[$tableId], $fetchers[$this->tableFetcherMap[$tableId]]);
-            foreach ($list as $id) {
-                if (empty($id)) continue;
-                $join->prependPath($tables[$id]);
-            }
-            foreach ($tableMappings as $a => $b) {
-                $join->addTableMapping($b, $a);
-            }
-            $join->addTableMapping($table, $tableAs);
-        }
-
-        return $join;
     }
 
     private function joinIdList(int $fromId, int $toId): ?string
@@ -400,6 +342,99 @@ abstract class BaseFetcher implements Fetcher
     }
 
     //-------------------------------------------
+    // Handle where call
+    //-------------------------------------------
+    private function handleWhere($fullField, $param, ?string $operator = null)
+    {
+        $field = $this->makeFieldObject($fullField, $param, $operator);
+        if ($field === null) return false;
+
+        $this->fieldGroup->addField($field);
+
+        return true;
+    }
+
+    //-------------------------------------------
+    // Handle join call
+    //-------------------------------------------
+    private function handleJoin($fullField, $param, ?string $operator = null)
+    {
+        if (!strpos($fullField, '.')) return false;
+        $tables = explode('.', $fullField);
+        $fullField = array_pop($tables);
+
+        $join = $this->findJoin($tables);
+        if (!$join) return false;
+
+        $fetcherClass = $join->getFetcherClass();
+        $field = (new $fetcherClass)->makeFieldObject($fullField, $param, $operator);
+        if ($field === null) return false;
+
+        $field->setJoin($join);
+        $field->setValue($param);
+        $this->fieldGroup->addField($field);
+
+        $this->joinsToMake[$join->pathEndAs()] = $join;
+
+        return true;
+    }
+
+    private function findJoin(array $tablePath): ?Join
+    {
+        $pathEnd = $tableAs = $table = array_pop($tablePath);
+        if (array_key_exists($table, self::$joinsAs)) $table = $pathEnd = self::$joinsAs[$table]['table'];
+
+        $pathTraveled = false;
+
+        $baseId = $this->getTableId($this->table);
+
+        $list = null;
+        $tableId = null;
+
+        $tableMappings = [];
+
+        do {
+            if (count($tablePath) > 0) {
+                $tableTo = array_shift($tablePath);
+
+                if (array_key_exists($tableTo, self::$joinsAs)) {
+                    $tableTo = $tableMappings[$tableTo] = self::$joinsAs[$tableTo]['table'];
+                }
+            } else {
+                $tableTo = $pathEnd;
+                $pathTraveled = true;
+            }
+
+            if ($list !== null && $tableId !== null) $list .= $tableId.'|';
+
+            $tableId = array_key_exists($tableTo, $this->tableIds)?$this->tableIds[$tableTo]:null;
+            if ($tableId === null) throw new Exception(sprintf('table %s not found', $tableTo));
+
+            $list .= $this->joinIdList($baseId, $tableId);
+            $baseId = $tableId;
+
+        } while (!$pathTraveled);
+
+        $join = null;
+        if ($list !== null) {
+            $fetchers = array_flip($this->fetcherIds);
+            $tables = array_flip($this->tableIds);
+            $list = array_reverse(explode('|', $list));
+            $join = new Join($tables[$tableId], $fetchers[$this->tableFetcherMap[$tableId]]);
+            foreach ($list as $id) {
+                if (empty($id)) continue;
+                $join->prependPath($tables[$id]);
+            }
+            foreach ($tableMappings as $a => $b) {
+                $join->addTableMapping($b, $a);
+            }
+            $join->addTableMapping($table, $tableAs);
+        }
+
+        return $join;
+    }
+
+    //-------------------------------------------
     // Handle array call
     //-------------------------------------------
     private function handleArray(array $fields)
@@ -442,90 +477,6 @@ abstract class BaseFetcher implements Fetcher
         }
         $this->fieldGroup->addField($group);
         return true;
-    }
-
-    //-------------------------------------------
-    // Handle where call
-    //-------------------------------------------
-    private function handleWhere($fullField, $param, ?string $operator = null)
-    {
-        $field = $this->makeFieldObject($fullField, $param, $operator);
-        if ($field === null) return false;
-
-        $this->fieldGroup->addField($field);
-
-        return true;
-    }
-
-    //-------------------------------------------
-    // Handle join call
-    //-------------------------------------------
-    private function handleJoin($fullField, $param, ?string $operator = null)
-    {
-        if (!strpos($fullField, '.')) return false;
-        $tables = explode('.', $fullField);
-        $fullField = array_pop($tables);
-
-        $join = $this->findJoin($tables);
-        if (!$join) return false;
-
-        $fetcherClass = $join->getFetcherClass();
-        $field = (new $fetcherClass)->makeFieldObject($fullField, $param, $operator);
-        if ($field === null) return false;
-
-        $field->setJoin($join);
-        $field->setValue($param);
-        $this->fieldGroup->addField($field);
-
-        $this->joinsToMake[$join->pathEndAs()] = $join;
-
-        return true;
-    }
-
-    private $searchedFetchers = [];
-    private $fullJoinTable = null;
-
-    private function findJoinDeprecated($tables, $availableJoins): ?Join
-    {
-        $this->searchedFetchers = [];
-        if (!is_array($tables)) $tables = [$tables];
-
-        $this->fullJoinTable = '';
-
-        return $this->findJoinClosure($tables, $availableJoins);
-    }
-
-    private function findJoinClosure($tables, $availableJoins): ?Join
-    {
-        $table = $tables[0];
-        $fullJoinTable = $this->fullJoinTable;
-
-        $availableJoins = array_diff($availableJoins, $this->searchedFetchers);
-
-        foreach ($availableJoins as $availableJoin => $fetcherClass) {
-            $this->searchedFetchers[] = $fetcherClass;
-            if (array_key_exists($table, $availableJoins)) {
-                if (count($tables) === 1) {
-                    $join = new Join($table, $availableJoins[$table]);
-                    $join->addTableMapping($table, $this->fullJoinTable.$table);
-                    return $join;
-                } else {
-                    $table = array_shift($tables);
-                    $this->fullJoinTable .= $table.'_';
-                }
-            } else {
-                $table = $fetcherClass::getTable();
-            }
-
-            $join = $this->findJoinClosure($tables, (new $fetcherClass)->getJoins());
-            if ($join !== null) {
-                $join->prependPath($table);
-                $join->addTableMapping($table, $fullJoinTable.$table);
-                return $join;
-            }
-        }
-
-        return null;
     }
 
     //-------------------------------------------
@@ -574,6 +525,8 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     abstract protected function buildQuery();
 
+    abstract protected function executeQuery(): array;
+
     /**
      * Get all the elements
      *
@@ -583,9 +536,8 @@ abstract class BaseFetcher implements Fetcher
     public function get()
     {
         $this->buildQuery();
-        $stmt = $this->getStatement();
 
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $this->executeQuery();
         if (count($this->groupedFields) > 0) {
             foreach ($rows as $index => $row) {
                 foreach ($this->groupedFields as $groupField)
@@ -613,9 +565,7 @@ abstract class BaseFetcher implements Fetcher
         $this->limit(1);
         $this->buildQuery();
 
-        $stmt = $this->getStatement();
-
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $this->executeQuery();
         $row = array_pop($rows);
         if ($row === null) return null;
 
@@ -653,21 +603,6 @@ abstract class BaseFetcher implements Fetcher
         $row = $this->first();
 
         return $row?$row['total']:0;
-    }
-
-    /**
-     * @return bool|\PDOStatement
-     * @throws Exception
-     */
-    private function getStatement()
-    {
-        if (self::$connection === null) throw new Exception('Connection no set');
-        $pdo = self::$connection;
-
-        $stmt = $pdo->prepare($this->queryString);
-        $stmt->execute($this->queryValues);
-
-        return $stmt;
     }
 
     //-------------------------------------------
@@ -966,5 +901,20 @@ abstract class BaseFetcher implements Fetcher
         }
 
         return $value;
+    }
+
+    //-------------------------------------------
+    // Error
+    //-------------------------------------------
+    protected $buildErrors = [];
+
+    protected function isValidBuild(): bool
+    {
+        return count($this->buildErrors) === 0;
+    }
+
+    protected function addBuildError(string $error)
+    {
+        $this->buildErrors[] = $error;
     }
 }
