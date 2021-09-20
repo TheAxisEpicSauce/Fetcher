@@ -5,17 +5,18 @@
  * Time: 10:44
  */
 
-namespace Tests\Fetchers;
+namespace Tests\MySqlFetchers;
 
 
 use Fetcher\BaseFetcher;
 use Fetcher\Field\FieldType;
+use Fetcher\MySqlFetcher;
 
-class AddressFetcher extends BaseFetcher
+class AddressFetcher extends MySqlFetcher
 {
     protected $table = 'address';
 
-    protected function getFields(): array
+    public function getFields(): array
     {
         return [
             'id' => FieldType::INT,
@@ -24,7 +25,7 @@ class AddressFetcher extends BaseFetcher
         ];
     }
 
-    protected function getJoins(): array
+    public function getJoins(): array
     {
         return [];
     }

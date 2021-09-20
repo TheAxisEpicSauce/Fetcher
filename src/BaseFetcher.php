@@ -67,29 +67,25 @@ abstract class BaseFetcher implements Fetcher
      */
     protected $model = null;
     /**
-     * @var bool
-     */
-    private $isRaw;
-    /**
      * @var null|FieldGroup
      */
-    private $fieldGroup = null;
+    protected $fieldGroup = null;
     /**
      * @var array|Join[]
      */
-    private $joinsToMake = [];
+    protected $joinsToMake = [];
     /**
      * @var string
      */
-    private $queryString;
+    protected $queryString;
     /**
      * @var array
      */
-    private $queryValues;
+    protected $queryValues;
     /**
      * @var array
      */
-    private $select;
+    protected $select;
     /**
      * @var array|string[]
      */
@@ -97,11 +93,11 @@ abstract class BaseFetcher implements Fetcher
     /**
      * @var array|BaseFetcher[]
      */
-    private $tableFetcherLookup;
+    protected $tableFetcherLookup;
     /**
      * @var null|int
      */
-    private $limit;
+    protected $limit;
     /**
      * @var FieldObjectValidator
      */
@@ -109,11 +105,11 @@ abstract class BaseFetcher implements Fetcher
     /**
      * @var bool
      */
-    private $needsGroupBy = false;
+    protected $needsGroupBy = false;
     /**
      * @var null|string|array
      */
-    private $groupBy = null;
+    protected $groupBy = null;
     /**
      * @var array
      */
@@ -121,13 +117,13 @@ abstract class BaseFetcher implements Fetcher
     /**
      * @var |null
      */
-    private $orderByFields;
+    protected $orderByFields;
     /**
      * @var string
      */
-    private $orderByDirection;
+    protected $orderByDirection;
 
-    private static $joinsAs = [];
+    protected static $joinsAs = [];
 
     /**
      * BaseFetcher constructor.
@@ -161,35 +157,32 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     // New instance
     //-------------------------------------------
-    public static function build(bool $isRaw = true): self
+    public static function build(): self
     {
-        return self::buildAnd($isRaw);
+        return self::buildAnd();
     }
 
-    public static function buildAnd(bool $isRaw = true): self
+    public static function buildAnd(): self
     {
         $fetcher = new static();
-        $fetcher->isRaw = $isRaw;
         $fetcher->fieldGroup = new FieldGroup(FieldConjunction::AND, []);
         $fetcher->reset();
 
         return $fetcher;
     }
 
-    public static function buildOr(bool $isRaw = true): self
+    public static function buildOr(): self
     {
         $fetcher = new static();
-        $fetcher->isRaw = $isRaw;
         $fetcher->fieldGroup = new FieldGroup(FieldConjunction::OR, []);
         $fetcher->reset();
 
         return $fetcher;
     }
 
-    public static function buildFromArray(array $data, bool $isRaw = true)
+    public static function buildFromArray(array $data)
     {
         $fetcher = new static();
-        $fetcher->isRaw = $isRaw;
         $fetcher->fieldGroup = new FieldGroup($data['type'], []);
         if (array_key_exists('joins_as', $data)) {
             foreach ($data['joins_as'] as $joinAs) {
@@ -576,154 +569,7 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     // Execution
     //-------------------------------------------
-    private function buildQuery()
-    {
-        $values = [];
-
-        $selectString   = $this->getSelectString();
-        $joinString     = $this->getJoinString();
-        $whereString    = $this->getWhereString($values);
-        $limitString    = $this->limit?' LIMIT '.$this->limit:'';
-        $groupString    = $this->getGroupString();
-        $orderByString  = $this->getOrderByString();
-
-        $query = "SELECT " . $selectString . " FROM " . "`$this->table`" . $joinString . $whereString . $groupString . $orderByString . $limitString;
-
-        $this->queryString = $query;
-        $this->queryValues = $values;
-    }
-
-    private function getSelectString()
-    {
-        return $this->select?implode(', ', $this->select):"`$this->table`".'.*';
-    }
-
-    private function getJoinString()
-    {
-        $joinsMade = [];
-        $joinString = '';
-
-        usort($this->joinsToMake, function(Join $a, Join $b) {
-            return $b->pathLength() - $a->pathLength();
-        });
-
-        foreach ($this->joinsToMake as $joinToMake) {
-            $currentFetcher = $this;
-            $tableFrom = $this->table;
-            $this->tableFetcherLookup[$tableFrom] = $this;
-
-            $tablesAs = [];
-
-            foreach ($joinToMake->getTables() as $tableTo) {
-                $joinMethod = 'join'.$this->studly($tableTo);
-
-                $tableAs = $joinToMake->getTableAs($tableTo);
-                $fetcherTo = $currentFetcher->getJoins()[$tableTo];
-
-                if (!array_key_exists($tableFrom, $joinsMade) || !in_array($tableAs, $joinsMade[$tableFrom])) {
-                    if (!method_exists($currentFetcher, $joinMethod)) throw new Exception(sprintf(
-                        '%s misses join method %s', $currentFetcher->getName(), $joinMethod
-                    ));
-                    $joinsMade[$tableFrom][] = $tableAs;
-
-                    $js = $currentFetcher->{$joinMethod}();
-                    if (!is_array($js)) $js = [$js];
-                    foreach ($js as $j) {
-                        $type = $joinToMake->isLeftJoin()?'LEFT JOIN':'JOIN';
-                        $originalTable = $fetcherTo::getTable();
-
-                        if (preg_match('/([a-zA-Z_`]+)( AS | as | ON | on )([`a-zA-Z_]+)( ON |)([ a-zA-Z._=\'`"]+)/', $j, $matches)) {
-                            if ($matches[2] === ' AS ' || $matches[2] === ' as ') {
-                                $j = $matches[5];
-                                $tableTo = $matches[3];
-                            } elseif ($matches[2] === ' ON ' || $matches[2] === ' on ') {
-                                $j = $matches[3].$matches[5];
-                                $tableTo = $matches[1];
-                            }
-                            $originalTable = $matches[1];
-                        }
-
-                        $as = $tableTo;
-
-                        $tableTo = $joinToMake->getTableAs($tableTo);
-                        $filter = array_key_exists($tableTo, self::$joinsAs)?self::$joinsAs[$tableTo]['filter']:null;
-                        if ($filter !== null) $j .= ' AND '.$tableTo.'.'.$filter;
-
-                        if ($originalTable!==$tableTo) {
-                            $as = $originalTable.' AS '.$tableTo;
-                            $tablesAs[$originalTable] = $tableTo;
-                        }
-
-                        foreach ($tablesAs as $tableA => $tableB) {
-                            $j = preg_replace(sprintf('/(\.)(%s)(\.)/', $tableA), '.'.$tableB.'.', $j);
-                            $j = preg_replace(sprintf('/(^)(%s)(\.)/', $tableA), $tableB.'.', $j);
-                            $j = preg_replace(sprintf('/( )(%s)(\.)/', $tableA), ' '.$tableB.'.', $j);
-                        }
-
-                        $joinString .= sprintf(' %s %s ON %s', $type, $as, $j);
-                    }
-                } else {
-                    $tableTo = $tableAs;
-                }
-                $this->tableFetcherLookup[$tableTo] = $currentFetcher = new $fetcherTo();
-                $tableFrom = $tableTo;
-            }
-        }
-
-        return $joinString;
-    }
-
-    private function getWhereString(array &$values = [])
-    {
-        $fieldToStringClosure = function (Field $field) use (&$fieldToStringClosure, &$values) {
-            if ($field instanceof FieldObject) {
-                $join = $field->getJoin();
-                if ($join !== null){
-                    $table = $join->pathEndAs();
-                } else {
-                    $table = $this::getTable();
-                }
-
-                if (is_array($field->getValue())) {
-                    $marks = [];
-                    foreach ($field->getValue() as $v) {$values[] = $v; $marks[] = '?';}
-                    $marks = '('.implode(', ', $marks).')';
-                } elseif ($field->getOperator() === Operator::EQUALS && $field->getValue() === null) {
-                    return sprintf('`%s`.`%s` %s', $table, $field->getField(), 'IS NULL');
-                } elseif ($field->getOperator() === Operator::NOT_EQUALS && $field->getValue() === null) {
-                    return sprintf('`%s`.`%s` %s', $table, $field->getField(), 'IS NOT NULL');
-                } else {
-                    $values[] = $field->getValue();
-                    $marks = '?';
-                }
-
-                return sprintf('`%s`.`%s` %s %s', $table, $field->getField(), $field->getOperator(), $marks);
-            } elseif ($field instanceof FieldGroup) {
-                $fields = [];
-                foreach ($field->getFields() as $f) $fields[] = $fieldToStringClosure($f);
-                return '('.implode($field->getConjunction()===FieldConjunction::AND?' AND ':' OR ', $fields).')';
-            }
-            return '';
-        };
-
-        $where = substr($fieldToStringClosure($this->fieldGroup), 1, -1);
-
-        return empty($where)?'':' WHERE '.$where;
-    }
-
-    private function getGroupString()
-    {
-        if (!$this->needsGroupBy) return '';
-        return ' GROUP BY '.$this->groupBy;
-    }
-
-    private function getOrderByString()
-    {
-        if ($this->orderByFields !== null && is_array($this->orderByFields) && !empty($this->orderByFields)) {
-            return ' ORDER BY '.implode(', ', $this->orderByFields).($this->orderByDirection==='desc'?' DESC':' ASC');
-        }
-        return '';
-    }
+    abstract protected function buildQuery();
 
     /**
      * Get all the elements
@@ -744,14 +590,12 @@ abstract class BaseFetcher implements Fetcher
             }
         }
 
-        if ($this->isRaw) return $rows;
-        throw new Exception('@TODO');
+        return $rows;
     }
 
     public function pluck(string $field)
     {
         $this->select([$field]);
-        $this->isRaw = true;
         return array_map('array_pop', $this->get());
     }
 
@@ -777,14 +621,12 @@ abstract class BaseFetcher implements Fetcher
                 $row[$groupField] = array_key_exists($groupField, $row)?explode(',', $row[$groupField]):[];
         }
 
-        if ($this->isRaw) return $row;
-        throw new Exception('@TODO');
+        return $row;
     }
 
     public function value(string $field)
     {
         $this->select([$field]);
-        $this->isRaw = true;
         $row = $this->first();
         if ($row === null) return null;
         return array_pop($row);
@@ -793,7 +635,6 @@ abstract class BaseFetcher implements Fetcher
     public function count()
     {
         $this->select = ['count(*) as total'];
-        $this->isRaw = true;
         $this->needsGroupBy = false;
         $row = $this->first();
 
@@ -805,7 +646,6 @@ abstract class BaseFetcher implements Fetcher
         $this->select([$field]);
 
         $this->select = ['sum('.$this->select[0].') as total'];
-        $this->isRaw = true;
         $this->needsGroupBy = false;
         $row = $this->first();
 
@@ -866,7 +706,7 @@ abstract class BaseFetcher implements Fetcher
 
     private static $tables = [];
 
-    private static function getTable()
+    protected static function getTable()
     {
         $fetcher = new static();
         $table = $fetcher->table;
@@ -886,7 +726,6 @@ abstract class BaseFetcher implements Fetcher
         if ($select === null) $select = ["*"];
 
         $this->select = [];
-        $this->isRaw = true;
 
         foreach ($select as $field) {
             [$field, $as] = $this->separateAs($field);
@@ -1013,14 +852,14 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     // Helpers
     //-------------------------------------------
-    private function studly($value)
+    protected function studly($value)
     {
         $value = ucwords(str_replace(['-', '_'], ' ', $value));
 
         return str_replace(' ', '', $value);
     }
 
-    private function snake($value)
+    protected function snake($value)
     {
         if (! ctype_lower($value)) {
             $value = preg_replace('/\s+/u', '', ucwords($value));

@@ -1,9 +1,8 @@
 <?php
 
 use Fetcher\BaseFetcher;
-use Fetcher\Field\FieldType;
 use PHPUnit\Framework\TestCase;
-use Tests\Fetchers\UserFetcher;
+use Tests\MySqlFetchers\UserFetcher;
 
 /**
  * User: Raphael Pelissier
@@ -11,7 +10,7 @@ use Tests\Fetchers\UserFetcher;
  * Time: 11:56
  */
 
-class FetcherTest extends TestCase
+class MySqlFetcherTest extends TestCase
 {
     public function testBuild()
     {
@@ -34,14 +33,14 @@ class FetcherTest extends TestCase
         $query = UserFetcher::build()->whereIdIn([1, 2, 3])->toSql();
 
         $this->assertEquals(
-            'SELECT `user`.`id`, `user`.`username`, `user`.`address_id` FROM user WHERE `user`.`id` IN (?, ?, ?)',
+            'SELECT `user`.`id`, `user`.`username`, `user`.`address_id` FROM `user` WHERE `user`.`id` IN (?, ?, ?) GROUP BY `user`.id',
             $query
         );
 
         $query = UserFetcher::build()->whereIdIn([1])->toSql();
 
         $this->assertEquals(
-            'SELECT `user`.`id`, `user`.`username`, `user`.`address_id` FROM user WHERE `user`.`id` IN (?)',
+            'SELECT `user`.`id`, `user`.`username`, `user`.`address_id` FROM `user` WHERE `user`.`id` IN (?) GROUP BY `user`.id',
             $query
         );
     }
@@ -71,7 +70,7 @@ class FetcherTest extends TestCase
     {
         $query = UserFetcher::build()->whereId(1)->whereUsername('test')->toSql();
         $this->assertEquals(
-            'SELECT `user`.`id`, `user`.`username`, `user`.`address_id` FROM user WHERE `user`.`id` = ? AND `user`.`username` = ?',
+            'SELECT `user`.`id`, `user`.`username`, `user`.`address_id` FROM `user` WHERE `user`.`id` = ? AND `user`.`username` = ? GROUP BY `user`.id',
             $query
         );
     }
@@ -80,7 +79,7 @@ class FetcherTest extends TestCase
     {
         $query = UserFetcher::buildOr()->whereId(1)->whereId(2)->toSql();
         $this->assertEquals(
-            'SELECT `user`.`id`, `user`.`username`, `user`.`address_id` FROM user WHERE `user`.`id` = ? OR `user`.`id` = ?',
+            'SELECT `user`.`id`, `user`.`username`, `user`.`address_id` FROM `user` WHERE `user`.`id` = ? OR `user`.`id` = ? GROUP BY `user`.id',
             $query
         );
     }
@@ -118,7 +117,7 @@ class FetcherTest extends TestCase
         $query = UserFetcher::build()->select(['user.*', 'address.*'])->toSql();
 
         $this->assertEquals(
-            'SELECT `user`.`id`, `user`.`username`, `user`.`address_id`, `address`.`id` AS address_id, `address`.`street` AS address_street, `address`.`number` AS address_number FROM user LEFT JOIN address ON address.id = user.address_id',
+            'SELECT `user`.`id`, `user`.`username`, `user`.`address_id`, `address`.`id` AS address_id, `address`.`street` AS address_street, `address`.`number` AS address_number FROM `user` LEFT JOIN address ON address.id = user.address_id GROUP BY `user`.id',
             $query
         );
     }
