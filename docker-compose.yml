@@ -7,17 +7,26 @@ services:
       - COMPOSER_CACHE_DIR=/app/.cache/composer
     volumes:
       - .:/app
-    restart: never
+    depends_on:
+      - php
+    entrypoint: ['composer', '--ignore-platform-reqs']
   php:
-    image: php:7.4-cli
-    restart: never
+    build:
+      context: .
+      dockerfile: php.dockerfile
     volumes:
       - .:/app
     working_dir: /app
-  phpunit:
-    image: php:7.4-cli
-    restart: never
-    volumes:
-      - .:/app
-    working_dir: /app
-    entrypoint: vendor/bin/phpunit
+    depends_on:
+      - mongodb
+    entrypoint: ['vendor/bin/phpunit']
+
+  mongodb:
+    image : mongo
+    container_name: mongodb
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: p0epsteen
+    ports:
+      - 27017:27017

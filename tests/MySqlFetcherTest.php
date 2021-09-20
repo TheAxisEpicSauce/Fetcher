@@ -1,14 +1,11 @@
 <?php
 
-use Fetcher\BaseFetcher;
+namespace Tests;
+
+use Exception;
+use Fetcher\MySqlFetcher;
 use PHPUnit\Framework\TestCase;
 use Tests\MySqlFetchers\UserFetcher;
-
-/**
- * User: Raphael Pelissier
- * Date: 20-07-20
- * Time: 11:56
- */
 
 class MySqlFetcherTest extends TestCase
 {
@@ -100,7 +97,7 @@ class MySqlFetcherTest extends TestCase
     public function testValidSelectAs()
     {
         $this->assertInstanceOf(
-            BaseFetcher::class,
+            MySqlFetcher::class,
             UserFetcher::build()->select(['username AS name'])
         );
     }

@@ -694,8 +694,6 @@ abstract class BaseFetcher implements Fetcher
                 throw new Exception(sprintf('Invalid field %s.%s', $table, $field));
             }
 
-//            if ($tables !== null) $table = implode('_', $tables);
-
             if ($field === '*') {
                 $this->addSelectFields($table, $fields);
             } else {
@@ -756,7 +754,7 @@ abstract class BaseFetcher implements Fetcher
     {
         if (empty($fields)) return $this->clearOrderBy();
         foreach ($fields as $field) {
-            [$table, $field] = $this->explodeTableField($field);
+            [$table, $field] = $this->explodeField($field);
             $this->orderByFields[$table][] = $field;
         }
         $this->orderByDirection = $direction;
@@ -838,7 +836,7 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     private $tableFields = [];
 
-    protected function explodeTableField(string $field)
+    protected function explodeField(string $field)
     {
         if (array_key_exists($field, $this->tableFields)) return $this->tableFields[$field];
 
@@ -863,14 +861,14 @@ abstract class BaseFetcher implements Fetcher
 
     private function addParseClosure(string $field, Closure $closure)
     {
-        [$table, $field] = $this->explodeTableField($field);
+        [$table, $field] = $this->explodeField($field);
 
         $this->parseFunctions[$table][$field] = $closure;
     }
 
     private function hasParseMethod(string $field)
     {
-        [$table, $field] = $this->explodeTableField($field);
+        [$table, $field] = $this->explodeField($field);
 
         if (array_key_exists($table, $this->parseFunctions)) {
             if (array_key_exists($field, $this->parseFunctions[$table])) {
@@ -888,7 +886,7 @@ abstract class BaseFetcher implements Fetcher
 
     private function parseField(string $field, $value)
     {
-        [$table, $field] = $this->explodeTableField($field);
+        [$table, $field] = $this->explodeField($field);
 
         if (!$this->hasParseMethod($field)) return $value;
 
