@@ -26,7 +26,7 @@ class MongoFetcherTest extends TestCase
 
         MongoFetcher::setConnection($client->db_app);
 
-        $client->db_app->country->insertOne([
+        $client->db_app->country->insertMany([[
             'code' => 'NL',
             'name' => 'Netherlands',
             'continent' => 'Europe'
@@ -34,7 +34,7 @@ class MongoFetcherTest extends TestCase
             'code' => 'FR',
             'name' => 'France',
             'continent' => 'Europe'
-        ]);
+        ]]);
     }
 
     protected function tearDown(): void
@@ -72,13 +72,31 @@ class MongoFetcherTest extends TestCase
         $this->assertEquals(['code' => 'NL', 'name' => 'Netherlands', 'continent' => 'Europe'], $result);
 
     }
-    public function testBigQuery()
+    public function testAndOrQuery()
     {
         $result = CountryFetcher::build()->whereContinent('Europe')->or(function($q) {
-            $q->whereCode('Nl')->whereCode('FR');
-        })->first();
+            $q->whereCode('NL')->whereCode('FR');
+        })->get();
 
-        $this->assertEquals(['code' => 'NL', 'name' => 'Netherlands', 'continent' => 'Europe'], $result);
+        $this->assertEquals(
+            [
+                ['code' => 'NL', 'name' => 'Netherlands', 'continent' => 'Europe'],
+                ['code' => 'FR', 'name' => 'France', 'continent' => 'Europe']
+            ],
+            $result
+        );
+    }
 
+    public function testSelect()
+    {
+        $result = CountryFetcher::build()->select(['country.name'])->get();
+
+        $this->assertEquals(
+            [
+                ['name' => 'Netherlands'],
+                ['name' => 'France']
+            ],
+            $result
+        );
     }
 }
