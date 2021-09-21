@@ -19,6 +19,8 @@ use PDO;
 
 abstract class MySqlFetcher extends BaseFetcher
 {
+    static $connection = null;
+
     /**
      * @param PDO $connection
      * @throws Exception
@@ -26,7 +28,7 @@ abstract class MySqlFetcher extends BaseFetcher
     public static function setConnection($connection): void
     {
         if (!$connection instanceof PDO) throw new Exception('invalid connection type');
-        self::$connection = $connection;
+        static::$connection = $connection;
     }
 
     protected function buildQuery()
@@ -52,8 +54,8 @@ abstract class MySqlFetcher extends BaseFetcher
 
     protected function executeQuery(): array
     {
-        if (self::$connection === null) throw new Exception('Connection not set');
-        $pdo = self::$connection;
+        if (static::$connection === null) throw new Exception('Connection not set');
+        $pdo = static::$connection;
 
         $stmt = $pdo->prepare($this->queryString);
         $stmt->execute($this->queryValues);

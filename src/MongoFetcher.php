@@ -19,6 +19,8 @@ use MongoDB\Model\BSONDocument;
 
 abstract class MongoFetcher extends BaseFetcher
 {
+    static $connection = null;
+
     private $operators = [
         Operator::EQUALS => '$eq',
         Operator::NOT_EQUALS => '$ne',
@@ -32,17 +34,13 @@ abstract class MongoFetcher extends BaseFetcher
     {
         if (!$connection instanceof Database) throw new \Exception('invalid connection type');
 
-        $connection->test;
-        self::$connection = $connection;
+        static::$connection = $connection;
     }
 
     private $match = null;
 
     protected function buildQuery()
     {
-        /** @var Collection $collection */
-        $collection = self::$connection->{$this->table};
-
         $this->match = $this->buildMatch($this->fieldGroup);
     }
 
@@ -69,8 +67,11 @@ abstract class MongoFetcher extends BaseFetcher
 
     protected function executeQuery(): array
     {
+        if (static::$connection === null) throw new Exception('Connection not set');
+        $pdo = static::$connection;
+
         /** @var Collection $collection */
-        $collection = self::$connection->{$this->table};
+        $collection = static::$connection->{$this->table};
 
         $select = $this->select;
 
