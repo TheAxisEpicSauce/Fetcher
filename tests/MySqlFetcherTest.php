@@ -20,7 +20,7 @@ class MySqlFetcherTest extends TestCase
 
     protected function setUp(): void
     {
-        MySqlFetcher::setConnection(MysqlDbHelper::getClient());
+        MySqlFetcher::setConnection(MysqlDbHelper::client());
 
         MysqlDbHelper::up();
 

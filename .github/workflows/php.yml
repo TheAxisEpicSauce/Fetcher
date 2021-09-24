@@ -21,4 +21,4 @@ jobs:
       run : docker-compose run --rm composer install
 
     - name: Run test suite
-      run: docker-compose run --rm php tests
+      run: docker-compose run --rm php vendor/bin/phpunit tests
