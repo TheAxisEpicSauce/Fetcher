@@ -99,10 +99,6 @@ abstract class BaseFetcher implements Fetcher
      */
     private $fieldObjectValidator;
     /**
-     * @var bool
-     */
-    protected $needsGroupBy = false;
-    /**
      * @var null|array
      */
     protected $groupByFields = null;
@@ -588,7 +584,7 @@ abstract class BaseFetcher implements Fetcher
     public function count()
     {
         $this->select = ['count(*) as total'];
-        $this->needsGroupBy = false;
+        $this->groupByFields = null;
         $row = $this->first();
 
         return $row?$row['total']:0;
@@ -599,7 +595,7 @@ abstract class BaseFetcher implements Fetcher
         $this->select([$field]);
 
         $this->select = ['sum('.$this->select[0].') as total'];
-        $this->needsGroupBy = false;
+        $this->groupByFields = null;
         $row = $this->first();
 
         return $row?$row['total']:0;
@@ -668,7 +664,6 @@ abstract class BaseFetcher implements Fetcher
         foreach ($select as $field) {
             [$field, $as] = $this->separateAs($field);
             [$field, $modifier] = $this->separateModifier($field);
-            if ($modifier === 'group') $this->needsGroupBy = true;
 
             $tables = null;
             if (strpos($field, '.') !== false) {
