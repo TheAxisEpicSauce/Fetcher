@@ -11,6 +11,7 @@ use Exception;
 use Fetcher\MongoFetcher;
 use MongoDB\Client;
 use PHPUnit\Framework\TestCase;
+use Tests\Helpers\MongoDbHelper;
 use Tests\MongoFetchers\CountryFetcher;
 
 class MongoFetcherTest extends TestCase
@@ -22,24 +23,14 @@ class MongoFetcherTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->client = $client = new Client("mongodb://root:p0epsteen@mongodb:27017");
+        MongoFetcher::setConnection(MongoDbHelper::client());
 
-        MongoFetcher::setConnection($client->db_app);
-
-        $client->db_app->country->insertMany([[
-            'code' => 'NL',
-            'name' => 'Netherlands',
-            'continent' => 'Europe'
-        ], [
-            'code' => 'FR',
-            'name' => 'France',
-            'continent' => 'Europe'
-        ]]);
+        MongoDbHelper::up();
     }
 
     protected function tearDown(): void
     {
-        $this->client->dropDatabase('db_app');
+        MongoDbHelper::down();
     }
 
     public function testBuild()
