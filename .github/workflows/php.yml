@@ -47,6 +47,8 @@ jobs:
 
     - name: Docker up
       run: docker-compose up -d php
+      with:
+        driver-opts: network=host
 
     - name: Dependecies
       run : docker-compose run --rm composer install
