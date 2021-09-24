@@ -20,6 +20,8 @@ jobs:
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
+      with:
+        driver-opts: network=host
 
     - name: Cache Docker
       uses: actions/cache@v2
