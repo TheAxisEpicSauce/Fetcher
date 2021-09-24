@@ -47,7 +47,6 @@ jobs:
 
     - name: Docker up
       run: docker-compose up -d php
-      with:
 
     - name: Dependecies
       run : docker-compose run --rm composer install
