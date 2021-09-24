@@ -839,9 +839,9 @@ abstract class BaseFetcher implements Fetcher
 
         $pos = strpos($field, '.');
         if ($pos === false) {
-            [$table, $field] = explode('.', $field);
-        } else {
             $table = $this->table;
+        } else {
+            [$table, $field] = explode('.', $field);
         }
 
         $this->tableFields[$field] = [$table, $field];
