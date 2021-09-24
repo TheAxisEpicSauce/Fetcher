@@ -34,7 +34,7 @@ jobs:
       with:
         context: ./
         file: ./php.dockerfile
-        push: false
+        push: true
         tags: localhost:5000/kennethkohbv/fetcher:test
         builder: ${{ steps.buildx.outputs.name }}
         cache-from: type=local,src=/tmp/.buildx-cache
