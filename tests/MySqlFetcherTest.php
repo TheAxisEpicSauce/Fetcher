@@ -3,12 +3,35 @@
 namespace Tests;
 
 use Exception;
+use Fetcher\MongoFetcher;
 use Fetcher\MySqlFetcher;
+use MongoDB\Client;
 use PHPUnit\Framework\TestCase;
+use Tests\Helpers\MysqlDbHelper;
+use Tests\MySqlFetchers\AddressFetcher;
 use Tests\MySqlFetchers\UserFetcher;
 
 class MySqlFetcherTest extends TestCase
 {
+    /**
+     * @var \PDO
+     */
+    private $client;
+
+    protected function setUp(): void
+    {
+        MySqlFetcher::setConnection(MysqlDbHelper::getClient());
+
+        MysqlDbHelper::up();
+
+    }
+
+    protected function tearDown(): void
+    {
+        MysqlDbHelper::down();
+    }
+
+
     public function testBuild()
     {
         $this->assertInstanceOf(
@@ -117,5 +140,12 @@ class MySqlFetcherTest extends TestCase
             'SELECT `user`.`id`, `user`.`username`, `user`.`address_id`, `address`.`id` AS address_id, `address`.`street` AS address_street, `address`.`number` AS address_number FROM `user` LEFT JOIN address ON address.id = user.address_id GROUP BY `user`.`id`',
             $query
         );
+    }
+
+    public function testCount()
+    {
+        $count = AddressFetcher::build()->count();
+
+        $this->assertEquals(2, $count);
     }
 }

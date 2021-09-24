@@ -8,6 +8,7 @@
 namespace Fetcher;
 
 
+use Exception;
 use Fetcher\Field\FieldConjunction;
 use Fetcher\Field\FieldGroup;
 use Fetcher\Field\FieldObject;
@@ -68,14 +69,12 @@ abstract class MongoFetcher extends BaseFetcher
     protected function executeQuery(): array
     {
         if (static::$connection === null) throw new Exception('Connection not set');
-        $pdo = static::$connection;
 
         /** @var Collection $collection */
         $collection = static::$connection->{$this->table};
 
-        $select = $this->select;
-
-        foreach ($select as $field) {
+        $project = [];
+        foreach ($this->select as $field) {
             $field = str_replace([$this->table, '.', '`'], '', $field);
             $project[$field] = 1;
         }
