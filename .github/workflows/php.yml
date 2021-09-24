@@ -24,6 +24,9 @@ jobs:
 
     - name: Docker up
       run: docker-compose up -d --build php
+      with:
+        cache-from: type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache
 
     - name: Dependecies
       run : docker-compose run --rm composer install
