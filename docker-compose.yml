@@ -6,10 +6,10 @@ services:
     volumes:
       - .:/app
     entrypoint: ['composer', '--ignore-platform-reqs']
+
   php:
-    build:
-      context: .
-      dockerfile: php.dockerfile
+    image: kennethkohbv/fetcher-test:test
+    container_name: php
     volumes:
       - .:/app
     working_dir: /app
