@@ -20,6 +20,6 @@ class Operator extends Enum
     CONST LESS_OR_EQUAL = '<=';
     CONST LIKE = 'LIKE';
     CONST IN = 'IN';
-    CONST IN_LIKE = 'IN_LIKE';
-    CONST NOT_IN = 'NOT_IN';
+    CONST IN_LIKE = 'IN LIKE';
+    CONST NOT_IN = 'NOT IN';
 }

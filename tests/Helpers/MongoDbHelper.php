@@ -37,6 +37,20 @@ class MongoDbHelper
             'name' => 'France',
             'continent' => 'Europe'
         ]]);
+
+        self::client()->city->insertMany([[
+            'city_code' => 'NL',
+            'name' => 'Hoofddorp'
+        ], [
+            'code' => 'NL',
+            'name' => 'Amsterdam'
+        ], [
+            'code' => 'NL',
+            'name' => 'Haarlem'
+        ], [
+            'code' => 'NL',
+            'name' => 'Zaandaam'
+        ]]);
     }
 
     public static function down()

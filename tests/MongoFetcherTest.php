@@ -12,6 +12,7 @@ use Fetcher\MongoFetcher;
 use MongoDB\Client;
 use PHPUnit\Framework\TestCase;
 use Tests\Helpers\MongoDbHelper;
+use Tests\MongoFetchers\CityFetcher;
 use Tests\MongoFetchers\CountryFetcher;
 
 class MongoFetcherTest extends TestCase
@@ -115,5 +116,12 @@ class MongoFetcherTest extends TestCase
             ],
             $result
         );
+    }
+
+    public function testJoin()
+    {
+        $result = CityFetcher::build()->select(['city.*', 'country.name AS country_name'])->get();
+        var_dump($result);
+
     }
 }

@@ -30,13 +30,13 @@ class Join
     /**
      * Join constructor.
      * @param string $path
-     * @param string $reporterClass
+     * @param string $fetcherClass
      * @param string $type
      */
-    public function __construct(string $path, string $reporterClass, string $type = 'left')
+    public function __construct(string $path, string $fetcherClass, string $type = 'left')
     {
         $this->path = $path;
-        $this->fetcherClass = $reporterClass;
+        $this->fetcherClass = $fetcherClass;
         $this->type = $type;
     }
 
