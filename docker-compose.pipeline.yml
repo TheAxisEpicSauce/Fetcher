@@ -8,9 +8,7 @@ services:
     entrypoint: ['composer', '--ignore-platform-reqs']
 
   php:
-    build:
-      context: .
-      dockerfile: php.dockerfile
+    image: localhost:5000/kennethkohbv/fetcher:test
     container_name: php
     volumes:
       - .:/app
@@ -18,16 +16,6 @@ services:
     depends_on:
       - mongodb
       - mysql
-
-  phpunit:
-    build:
-      context: .
-      dockerfile: php.dockerfile
-    container_name: phpunit
-    volumes:
-      - .:/app
-    working_dir: /app
-    entrypoint: ['vendor/bin/phpunit']
 
   mysql:
     image: mysql:5.7.29

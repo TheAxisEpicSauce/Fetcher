@@ -82,9 +82,21 @@ abstract class MongoFetcher extends BaseFetcher
         $aggregate = [];
         if (!empty($this->match)) $aggregate[] = ['$match' => $this->match];
 
+        if ($this->orderByFields !== null) {
+            $sort = [];
+            foreach ($this->orderByFields as $table => $fields) {
+                foreach ($fields as $field) {
+                    $sort[$field] = $this->orderByDirection==='DESC'?-1:1;
+                }
+            }
+            $aggregate[] = ['$sort' => $sort];
+        }
+
         $aggregate[] = ['$project' => $project];
 
         $result = $collection->aggregate($aggregate);
+
+
 
         $data = [];
         foreach ($result as $item) {

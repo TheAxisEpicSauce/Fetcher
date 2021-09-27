@@ -46,7 +46,7 @@ jobs:
       run: echo ${{ steps.docker_build.outputs.digest }}
 
     - name: Docker up
-      run: docker-compose up -d php
+      run: docker-compose -f docker-compose.pipeline.yml up -d php
 
     - name: Docker ps
       run: docker ps

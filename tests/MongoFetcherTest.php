@@ -90,4 +90,30 @@ class MongoFetcherTest extends TestCase
             $result
         );
     }
+
+    public function testOrderByAsc()
+    {
+        $result = CountryFetcher::build()->select(['country.name'])->orderBy(['country.name'], 'ASC')->get();
+
+        $this->assertEquals(
+            [
+                ['name' => 'France'],
+                ['name' => 'Netherlands']
+            ],
+            $result
+        );
+    }
+
+    public function testOrderByDesc()
+    {
+        $result = CountryFetcher::build()->select(['country.name'])->orderBy(['country.name'], 'DESC')->get();
+
+        $this->assertEquals(
+            [
+                ['name' => 'Netherlands'],
+                ['name' => 'France']
+            ],
+            $result
+        );
+    }
 }
