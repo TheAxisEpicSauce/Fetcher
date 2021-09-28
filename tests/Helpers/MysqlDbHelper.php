@@ -28,6 +28,7 @@ class MysqlDbHelper
         $data = [
             ['Ommerbos','30'],
             ['Burgemeester Pabstlaan','8-35'],
+            ['Ommerbos','28']
         ];
         $stmt = self::client()->prepare("INSERT INTO address (street, number) VALUES (?,?)");
         self::client()->beginTransaction();

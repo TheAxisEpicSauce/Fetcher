@@ -146,6 +146,15 @@ class MySqlFetcherTest extends TestCase
     {
         $count = AddressFetcher::build()->count();
 
-        $this->assertEquals(2, $count);
+        $this->assertEquals(3, $count);
+    }
+
+    public function testNotIn()
+    {
+        $query = AddressFetcher::whereIdNotIn([1, 2])->get();
+
+        $this->assertEquals([
+            ['id' => 3, 'street' => 'Ommerbos', 'number' => '28']
+        ], $query);
     }
 }
