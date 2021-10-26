@@ -583,7 +583,7 @@ abstract class BaseFetcher implements Fetcher
 
     public function count()
     {
-        $this->select = [sprintf('count(`%s`.`%s`) as total', $this->table, $this->key)];
+        $this->select = [sprintf('count(DISTINCT `%s`.`%s`) as total', $this->table, $this->key)];
         $this->groupByFields = null;
         $row = $this->first();
 
