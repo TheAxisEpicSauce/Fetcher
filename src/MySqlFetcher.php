@@ -205,7 +205,7 @@ abstract class MySqlFetcher extends BaseFetcher
     {
         if ($this->orderByFields === null) return '';
         $string = null;
-        foreach ($this->groupByFields as $table => $fields) {
+        foreach ($this->orderByFields as $table => $fields) {
             foreach ($fields as $field) {
                 if ($string === null) {
                     $string = " ORDER BY `$table`.`$field`";
