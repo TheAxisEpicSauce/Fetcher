@@ -39,11 +39,11 @@ abstract class MySqlFetcher extends BaseFetcher
         $joinString     = $this->getJoinString();
         $whereString    = $this->getWhereString($values);
         $limitString    = $this->take?' LIMIT '.$this->take:'';
-        $limitString    = $this->skip?' OFFSET '.$this->skip:'';
+        $offsetString    = $this->skip?' OFFSET '.$this->skip:'';
         $groupString    = $this->getGroupByString();
         $orderByString  = $this->getOrderByString();
 
-        $query = "SELECT " . $selectString . " FROM " . "`$this->table`" . $joinString . $whereString . $groupString . $orderByString . $limitString;
+        $query = "SELECT " . $selectString . " FROM " . "`$this->table`" . $joinString . $whereString . $groupString . $orderByString . $limitString . $offsetString;
 
         $this->queryString = $query;
         $this->queryValues = $values;
