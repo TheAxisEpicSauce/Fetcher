@@ -25,6 +25,7 @@ use ReflectionClass;
 /**
  * Class BaseFetcher
  * @package Fetcher
+ * @method self where(string $field, string $operator, ?string $value = null)
  */
 abstract class BaseFetcher implements Fetcher
 {
@@ -93,7 +94,11 @@ abstract class BaseFetcher implements Fetcher
     /**
      * @var null|int
      */
-    protected $limit;
+    protected $take;
+    /**
+     * @var null|int
+     */
+    protected $skip;
     /**
      * @var FieldObjectValidator
      */
@@ -558,7 +563,7 @@ abstract class BaseFetcher implements Fetcher
      */
     public function first()
     {
-        $this->limit(1);
+        $this->take(1);
         $this->buildQuery();
 
         $rows = $this->executeQuery();
@@ -734,15 +739,26 @@ abstract class BaseFetcher implements Fetcher
         return $this->select;
     }
 
-    public function limit(?int $limit)
+    public function take(?int $take)
     {
-        $this->limit = $limit;
+        $this->take = $take;
         return $this;
     }
 
-    public function getLimit()
+    public function getTake(): ?int
     {
-        return $this->limit;
+        return $this->take;
+    }
+
+    public function skip(?int $skip)
+    {
+        $this->skip = $skip;
+        return $this;
+    }
+
+    public function getSkip(): ?int
+    {
+        return $this->skip;
     }
 
     public function orderBy(array $fields, string $direction)
