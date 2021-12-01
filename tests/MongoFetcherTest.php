@@ -118,10 +118,9 @@ class MongoFetcherTest extends TestCase
         );
     }
 
-    public function testJoin()
-    {
-        $result = CityFetcher::build()->select(['city.*', 'country.name AS country_name'])->get();
-        var_dump($result);
-
-    }
+//    public function testJoin()
+//    {
+//        $result = CityFetcher::build()->select(['city.*', 'country.name AS country_name'])->get();
+//
+//    }
 }

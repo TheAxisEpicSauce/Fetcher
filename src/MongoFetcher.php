@@ -47,7 +47,7 @@ abstract class MongoFetcher extends BaseFetcher
 
     protected function buildQuery()
     {
-        $this->lookup = $this->buildLookup($this->joinsToMake);
+//        $this->lookup = $this->buildLookup($this->joinsToMake);
         $this->match = $this->buildMatch($this->fieldGroup);
         $this->project = $this->buildProject($this->select);
         $this->sort = $this->buildSort($this->orderByFields, $this->orderByDirection);
@@ -130,7 +130,6 @@ abstract class MongoFetcher extends BaseFetcher
 
     private function buildProject(array $select)
     {
-        var_dump($select);
         $project = [];
         foreach ($select as $field) {
             $field = str_replace([$this->table, '.', '`'], '', $field);
@@ -164,7 +163,7 @@ abstract class MongoFetcher extends BaseFetcher
 
         $aggregate = [];
         #Join
-        foreach ($this->lookup as $lookup) $aggregate[] = ['$lookup' => $lookup];
+//        foreach ($this->lookup as $lookup) $aggregate[] = ['$lookup' => $lookup];
         # Where
         if (!empty($this->match)) $aggregate[] = ['$match' => $this->match];
         # Select
