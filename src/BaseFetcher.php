@@ -599,7 +599,9 @@ abstract class BaseFetcher implements Fetcher
     {
         $this->select([$field]);
 
-        $this->select = ['sum('.$this->select[0].') as total'];
+        [$table, $field] = $this->explodeField($field);
+
+        $this->select = [sprintf('sum(`%s`.`%s`) as total', $table, $field)];
         $this->groupByFields = null;
         $row = $this->first();
 

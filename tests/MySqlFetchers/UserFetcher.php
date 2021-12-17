@@ -19,7 +19,9 @@ class UserFetcher extends MySqlFetcher
     {
         return [
             'id' => FieldType::INT,
-            'username' => FieldType::STRING,
+            'first_name' => FieldType::STRING,
+            'last_name' => FieldType::STRING,
+            'age' => FieldType::INT,
             'address_id' => FieldType::INT
         ];
     }

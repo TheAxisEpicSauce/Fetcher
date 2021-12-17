@@ -53,14 +53,14 @@ class MySqlFetcherTest extends TestCase
         $query = UserFetcher::build()->whereIdIn([1, 2, 3])->toSql();
 
         $this->assertEquals(
-            'SELECT `user`.`id`, `user`.`username`, `user`.`address_id` FROM `user` WHERE `user`.`id` IN (?, ?, ?) GROUP BY `user`.`id`',
+            'SELECT `user`.`id`, `user`.`first_name`, `user`.`last_name`, `user`.`age`, `user`.`address_id` FROM `user` WHERE `user`.`id` IN (?, ?, ?) GROUP BY `user`.`id`',
             $query
         );
 
         $query = UserFetcher::build()->whereIdIn([1])->toSql();
 
         $this->assertEquals(
-            'SELECT `user`.`id`, `user`.`username`, `user`.`address_id` FROM `user` WHERE `user`.`id` IN (?) GROUP BY `user`.`id`',
+            'SELECT `user`.`id`, `user`.`first_name`, `user`.`last_name`, `user`.`age`, `user`.`address_id` FROM `user` WHERE `user`.`id` IN (?) GROUP BY `user`.`id`',
             $query
         );
     }
@@ -88,9 +88,9 @@ class MySqlFetcherTest extends TestCase
 
     public function testAndGroup()
     {
-        $query = UserFetcher::build()->whereId(1)->whereUsername('test')->toSql();
+        $query = UserFetcher::build()->whereId(1)->whereFirstName('test')->toSql();
         $this->assertEquals(
-            'SELECT `user`.`id`, `user`.`username`, `user`.`address_id` FROM `user` WHERE `user`.`id` = ? AND `user`.`username` = ? GROUP BY `user`.`id`',
+            'SELECT `user`.`id`, `user`.`first_name`, `user`.`last_name`, `user`.`age`, `user`.`address_id` FROM `user` WHERE `user`.`id` = ? AND `user`.`first_name` = ? GROUP BY `user`.`id`',
             $query
         );
     }
@@ -99,7 +99,7 @@ class MySqlFetcherTest extends TestCase
     {
         $query = UserFetcher::buildOr()->whereId(1)->whereId(2)->toSql();
         $this->assertEquals(
-            'SELECT `user`.`id`, `user`.`username`, `user`.`address_id` FROM `user` WHERE `user`.`id` = ? OR `user`.`id` = ? GROUP BY `user`.`id`',
+            'SELECT `user`.`id`, `user`.`first_name`, `user`.`last_name`, `user`.`age`, `user`.`address_id` FROM `user` WHERE `user`.`id` = ? OR `user`.`id` = ? GROUP BY `user`.`id`',
             $query
         );
     }
@@ -108,12 +108,12 @@ class MySqlFetcherTest extends TestCase
     {
         $selectList = UserFetcher::build()->getSelect();
         $this->assertEquals([
-            '`user`.`id`', '`user`.`username`', '`user`.`address_id`'
+            '`user`.`id`', '`user`.`first_name`', '`user`.`last_name`', '`user`.`age`', '`user`.`address_id`'
         ], $selectList);
 
         $selectList = UserFetcher::build()->select(['user.*'])->getSelect();
         $this->assertEquals([
-            '`user`.`id`', '`user`.`username`', '`user`.`address_id`'
+            '`user`.`id`', '`user`.`first_name`', '`user`.`last_name`', '`user`.`age`', '`user`.`address_id`'
         ], $selectList);
     }
 
@@ -121,7 +121,7 @@ class MySqlFetcherTest extends TestCase
     {
         $this->assertInstanceOf(
             MySqlFetcher::class,
-            UserFetcher::build()->select(['username AS name'])
+            UserFetcher::build()->select(['first_name AS name'])
         );
     }
 
@@ -129,7 +129,7 @@ class MySqlFetcherTest extends TestCase
     {
         $this->expectException(Exception::class);
 
-        UserFetcher::build()->select(['user_name AS name']);
+        UserFetcher::build()->select(['firstname AS name']);
     }
 
     public function testSelectJoin()
@@ -137,7 +137,7 @@ class MySqlFetcherTest extends TestCase
         $query = UserFetcher::build()->select(['user.*', 'address.*'])->toSql();
 
         $this->assertEquals(
-            'SELECT `user`.`id`, `user`.`username`, `user`.`address_id`, `address`.`id` AS address_id, `address`.`street` AS address_street, `address`.`number` AS address_number FROM `user` LEFT JOIN address ON address.id = user.address_id GROUP BY `user`.`id`',
+            'SELECT `user`.`id`, `user`.`first_name`, `user`.`last_name`, `user`.`age`, `user`.`address_id`, `address`.`id` AS address_id, `address`.`street` AS address_street, `address`.`number` AS address_number FROM `user` LEFT JOIN address ON address.id = user.address_id GROUP BY `user`.`id`',
             $query
         );
     }
@@ -147,6 +147,17 @@ class MySqlFetcherTest extends TestCase
         $count = AddressFetcher::build()->count();
 
         $this->assertEquals(3, $count);
+    }
+
+    public function testSum()
+    {
+        $sum = UserFetcher::build()->sum('age');
+
+        $this->assertEquals(60, $sum);
+
+        $sum = UserFetcher::build()->sum('user.age');
+
+        $this->assertEquals(60, $sum);
     }
 
     public function testNotIn()
