@@ -10,9 +10,9 @@ namespace Fetcher;
 
 use Exception;
 use Fetcher\Field\Field;
-use Fetcher\Field\FieldConjunction;
-use Fetcher\Field\FieldGroup;
-use Fetcher\Field\FieldObject;
+use Fetcher\Field\Conjunction;
+use Fetcher\Field\GroupField;
+use Fetcher\Field\ObjectField;
 use Fetcher\Field\Operator;
 use Fetcher\Join\Join;
 use PDO;
@@ -151,7 +151,7 @@ abstract class MySqlFetcher extends BaseFetcher
     private function getWhereString(array &$values = [])
     {
         $fieldToStringClosure = function (Field $field) use (&$fieldToStringClosure, &$values) {
-            if ($field instanceof FieldObject) {
+            if ($field instanceof ObjectField) {
                 $join = $field->getJoin();
                 if ($join !== null){
                     $table = $join->pathEndAs();
@@ -173,10 +173,10 @@ abstract class MySqlFetcher extends BaseFetcher
                 }
 
                 return sprintf('`%s`.`%s` %s %s', $table, $field->getField(), $field->getOperator(), $marks);
-            } elseif ($field instanceof FieldGroup) {
+            } elseif ($field instanceof GroupField) {
                 $fields = [];
                 foreach ($field->getFields() as $f) $fields[] = $fieldToStringClosure($f);
-                return '('.implode($field->getConjunction()===FieldConjunction::AND?' AND ':' OR ', $fields).')';
+                return '('.implode($field->getConjunction()===Conjunction::AND?' AND ':' OR ', $fields).')';
             }
             return '';
         };

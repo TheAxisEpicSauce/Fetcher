@@ -10,7 +10,7 @@ namespace Fetcher\Field;
 
 use Fetcher\Join\Join;
 
-class FieldObject implements Field
+class ObjectField implements Field
 {
     private $field;
     private $type;

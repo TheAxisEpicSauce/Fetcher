@@ -35,9 +35,9 @@ class MysqlDbHelper
         self::client()->exec($sql);
 
         self::insertData("INSERT INTO user (first_name, last_name, age, address_id) VALUES (?,?,?,?)", [
-            ['raphael','pelissier','24',null],
-            ['bruce','pelissier','20',null],
-            ['george','pelissier','16',null]
+            ['raphael','pelissier','24',2],
+            ['bruce','pelissier','20',1],
+            ['george','pelissier','16',3]
         ]);
     }
 

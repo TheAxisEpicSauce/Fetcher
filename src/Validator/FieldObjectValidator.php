@@ -9,22 +9,22 @@ namespace Fetcher\Validator;
 
 
 use Exception;
-use Fetcher\Field\FieldObject;
+use Fetcher\Field\ObjectField;
 use Fetcher\Field\FieldType;
 use Fetcher\Field\Operator;
 
 class FieldObjectValidator
 {
     /**
-     * @var FieldObject
+     * @var ObjectField
      */
     private $object;
 
     /**
-     * @param FieldObject $fieldObject
+     * @param ObjectField $fieldObject
      * @throws Exception
      */
-    public function validate(FieldObject $fieldObject)
+    public function validate(ObjectField $fieldObject)
     {
         $this->object = $fieldObject;
 

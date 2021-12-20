@@ -9,9 +9,9 @@ namespace Fetcher;
 
 
 use Exception;
-use Fetcher\Field\FieldConjunction;
-use Fetcher\Field\FieldGroup;
-use Fetcher\Field\FieldObject;
+use Fetcher\Field\Conjunction;
+use Fetcher\Field\GroupField;
+use Fetcher\Field\ObjectField;
 use Fetcher\Field\Operator;
 use Fetcher\Join\Join;
 use MongoDB\Client;
@@ -107,12 +107,12 @@ abstract class MongoFetcher extends BaseFetcher
         return $lookup;
     }
 
-    private function buildMatch(FieldGroup $group)
+    private function buildMatch(GroupField $group)
     {
         $match = [];
 
         foreach ($group->getFields() as $field) {
-            if ($field instanceof FieldObject) {
+            if ($field instanceof ObjectField) {
                 $match[] =  [$field->getField() => [$this->operators[$field->getOperator()] => $field->getValue()]];
             } else {
                 $match[] = $this->buildMatch($field);
@@ -121,7 +121,7 @@ abstract class MongoFetcher extends BaseFetcher
 
         if (empty($match)) return [];
 
-        if ($group->getConjunction() === FieldConjunction::AND) {
+        if ($group->getConjunction() === Conjunction::AND) {
             return ['$and' => $match];
         } else {
             return ['$or' => $match];

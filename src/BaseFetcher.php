@@ -12,15 +12,17 @@ use BadMethodCallException;
 use Closure;
 use Exception;
 use Fetcher\Field\Operator;
+use Fetcher\Field\SubFetchField;
 use Fetcher\Validator\FieldObjectValidator;
 use PDO;
 use Fetcher\Field\Field;
-use Fetcher\Field\FieldConjunction;
-use Fetcher\Field\FieldGroup;
-use Fetcher\Field\FieldObject;
+use Fetcher\Field\Conjunction;
+use Fetcher\Field\GroupField;
+use Fetcher\Field\ObjectField;
 use Fetcher\Field\FieldType;
 use Fetcher\Join\Join;
 use ReflectionClass;
+use Symfony\Component\VarDumper\VarDumper;
 
 /**
  * Class BaseFetcher
@@ -64,7 +66,7 @@ abstract class BaseFetcher implements Fetcher
      */
     protected $key = 'id';
     /**
-     * @var null|FieldGroup
+     * @var null|GroupField
      */
     protected $fieldGroup = null;
     /**
@@ -156,7 +158,7 @@ abstract class BaseFetcher implements Fetcher
 
         $fetcher->reset();
 
-        $fetcher->fieldGroup = new FieldGroup(FieldConjunction::AND, []);
+        $fetcher->fieldGroup = new GroupField(Conjunction::AND, []);
 
         return $fetcher;
     }
@@ -168,7 +170,7 @@ abstract class BaseFetcher implements Fetcher
 
         $fetcher->reset();
 
-        $fetcher->fieldGroup = new FieldGroup(FieldConjunction::OR, []);
+        $fetcher->fieldGroup = new GroupField(Conjunction::OR, []);
 
         return $fetcher;
     }
@@ -180,7 +182,7 @@ abstract class BaseFetcher implements Fetcher
 
         $fetcher->reset();
 
-        $fetcher->fieldGroup = new FieldGroup($data['type'], []);
+        $fetcher->fieldGroup = new GroupField($data['type'], []);
 
         if (array_key_exists('joins_as', $data)) {
             foreach ($data['joins_as'] as $joinAs) {
@@ -219,7 +221,9 @@ abstract class BaseFetcher implements Fetcher
     // Fetcher mapping
     //-------------------------------------------
     private $fetcherIds = [];
+    private $fetchers = [];
     private $tableIds = [];
+    private $tables = [];
     private $visitedFetchers = [];
     private $fetcherNodes = [];
     private $tableNodes = [];
@@ -268,7 +272,8 @@ abstract class BaseFetcher implements Fetcher
         if (!array_key_exists($fetcherClass, $this->fetcherIds)) {
             static $fetcherId = 0; $fetcherId++;
             $this->fetcherIds[$fetcherClass] = $fetcherId;
-        };
+            $this->fetchers[$fetcherId] = $fetcherClass;
+        }
 
         return $this->fetcherIds[$fetcherClass];
     }
@@ -278,7 +283,8 @@ abstract class BaseFetcher implements Fetcher
         if (!array_key_exists($table, $this->tableIds)) {
             static $tableId = 0; $tableId++;
             $this->tableIds[$table] = $tableId;
-        };
+            $this->tables[$tableId] = $table;
+        }
 
         return $this->tableIds[$table];
     }
@@ -327,13 +333,23 @@ abstract class BaseFetcher implements Fetcher
 
     public function or(Closure $closure)
     {
-        $this->handleGroup(FieldConjunction::OR, $closure);
+        $this->handleGroup(Conjunction::OR, $closure);
         return $this;
     }
 
     public function and(Closure $closure)
     {
-        $this->handleGroup(FieldConjunction::AND, $closure);
+        $this->handleGroup(Conjunction::AND, $closure);
+        return $this;
+    }
+
+    public function sub(string $table, Closure $closure)
+    {
+        $join = $this->findJoin([$table]);
+        $fetcherClass = $join->getFetcherClass();
+        $fetcher = ($fetcherClass)::buildAnd();
+        $closure($fetcher);
+        $this->fieldGroup->addField(new SubFetchField($fetcher, $join));
         return $this;
     }
 
@@ -418,14 +434,20 @@ abstract class BaseFetcher implements Fetcher
 
         $join = null;
         if ($list !== null) {
-            $fetchers = array_flip($this->fetcherIds);
-            $tables = array_flip($this->tableIds);
             $list = array_reverse(explode('|', $list));
-            $join = new Join($tables[$tableId], $fetchers[$this->tableFetcherMap[$tableId]]);
+
+            $tableTo = $this->tables[$tableId];
+            $join = new Join($this->fetchers[$this->tableFetcherMap[$tableId]]);
+
             foreach ($list as $id) {
                 if (empty($id)) continue;
-                $join->prependPath($tables[$id]);
+                $fetcherFrom = new $this->fetchers[$this->tableFetcherMap[$id]];
+                $join->addLink($this->tables[$id], $tableTo, $this->joinType($fetcherFrom, $tableTo));
+                $tableTo = $this->tables[$id];
             }
+
+            $join->addLink($this->table, $tableTo, $this->joinType($this, $tableTo));
+
             foreach ($tableMappings as $a => $b) {
                 $join->addTableMapping($b, $a);
             }
@@ -433,6 +455,38 @@ abstract class BaseFetcher implements Fetcher
         }
 
         return $join;
+    }
+
+    protected function joinType(self $fetcherFrom, string $tableTo)
+    {
+        $fetcherToClass = $fetcherFrom->getJoins()[$tableTo];
+        $fetcherTo = new $fetcherToClass;
+
+        $keyFrom = $fetcherFrom->key;
+        $keyTo = $fetcherTo->key;
+
+        $tableFrom = $fetcherFrom->table;
+        $method = 'join'.$this->studly($tableTo);
+        $string = strtolower($fetcherFrom->$method());
+        if(strpos($string, 'and')) $string = substr($string, strpos($string, 'and'));
+        $string = str_replace(['`', ' '], '', $string);
+
+        $list = explode('=', $string);
+        $fromMatches = false;
+        $toMatches = false;
+        foreach ($list as $item)
+        {
+            [$table, $field] = $this->explodeField($item);
+            if ($table === $tableFrom && $field === $keyFrom) $fromMatches = true;
+            if ($table === $tableTo && $field == $keyTo) $toMatches = true;
+        }
+
+        $type = 'HAS_MANY';
+        if ($fromMatches) $type = 'HAS_MANY';
+        elseif ($toMatches) $type = 'BELONGS_TO';
+        else $type = 'MANY_TO_MANY';
+
+        return $type;
     }
 
     //-------------------------------------------
@@ -445,7 +499,7 @@ abstract class BaseFetcher implements Fetcher
                 $success = $this->handleWhere($field['param'], $field['value']);
                 if (!$success) $this->handleJoin($field['param'], $field['value']);
             } elseif ($this->isArrayGroup($field)) {
-                $repo = $field['type']===FieldConjunction::OR?self::buildOr():self::buildAnd();
+                $repo = $field['type']===Conjunction::OR?self::buildOr():self::buildAnd();
                 $repo->handleArray($field['fields']);
                 $this->fieldGroup->addField($repo->fieldGroup);
                 $this->joinsToMake = array_merge($this->joinsToMake, $repo->joinsToMake);
@@ -470,7 +524,7 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     private function handleGroup($fullField, $param)
     {
-        $repo = $fullField===FieldConjunction::OR?self::buildOr():self::buildAnd();
+        $repo = $fullField===Conjunction::OR?self::buildOr():self::buildAnd();
         $param($repo);
         $group = $repo->fieldGroup;
         foreach ($repo->joinsToMake as $joinToMake) {
@@ -489,9 +543,9 @@ abstract class BaseFetcher implements Fetcher
      * @param string $fullField
      * @param $value
      * @param string|null $operator
-     * @return FieldObject|null
+     * @return ObjectField|null
      */
-    private function makeFieldObject(string $fullField, $value, ?string $operator = null): ?FieldObject
+    private function makeFieldObject(string $fullField, $value, ?string $operator = null): ?ObjectField
     {
         if ($operator === null) {
             $fieldData = $this->splitFullField($fullField);
@@ -504,7 +558,7 @@ abstract class BaseFetcher implements Fetcher
         if (!$this->validateField($field)) return null;
         if (!$this->validateOperator($operator)) return null;
 
-        $object = new FieldObject($field, $this->getFieldType($field), $operator, $value);
+        $object = new ObjectField($field, $this->getFieldType($field), $operator, $value);
 
         $this->fieldObjectValidator->validate($object);
 
@@ -644,8 +698,6 @@ abstract class BaseFetcher implements Fetcher
         $this->fieldSuffixRegex = '/( |^)('.implode("|", array_keys($this->getFields())).')('.implode("|", array_keys($this->fieldSuffixes)).')( |$)/';
         return $this->fieldSuffixRegex;
     }
-
-    private static $tables = [];
 
     protected static function getTable()
     {

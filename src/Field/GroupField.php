@@ -8,11 +8,11 @@
 namespace Fetcher\Field;
 
 
-class FieldGroup implements Field
+class GroupField implements Field
 {
     private $conjunction;
     /**
-     * @var array|Field[]|FieldObject[]|FieldGroup[]
+     * @var array|Field[]|ObjectField[]|GroupField[]
      */
     private $fields;
 

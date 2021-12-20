@@ -28,16 +28,44 @@ class Join
     private $tableMapping = [];
 
     /**
-     * Join constructor.
-     * @param string $path
-     * @param string $fetcherClass
-     * @param string $type
+     * @var JoinLink[]
      */
-    public function __construct(string $path, string $fetcherClass, string $type = 'left')
+    private $links;
+
+
+    public function __construct(string $fetcherClass, string $type = 'left')
     {
-        $this->path = $path;
+        $this->path = '';
         $this->fetcherClass = $fetcherClass;
         $this->type = $type;
+        $this->links = [];
+    }
+
+    public function addLink(string $tableFrom, string $tableTo, string $type)
+    {
+        $link = new JoinLink($tableFrom, $tableTo, $type);
+        $linkB = array_key_exists($tableTo, $this->links)?$this->links[$tableTo]:null;
+        $link->next = $linkB;
+        if ($linkB) $linkB->prev = $link;
+        $this->links[$tableFrom] = $link;
+
+        $this->generatePath();
+    }
+
+    private function generatePath()
+    {
+        $link = null;
+        foreach ($this->links as $link) if ($link->prev === null) break;
+        if ($link === null) return;
+
+        $path = $link->getTableTo();
+        if ($link->next !== null) {
+            do {
+                $link = $link->next;
+                $path.='.'.$link->getTableTo();
+            } while ($link->next !== null);
+        }
+        $this->path = $path;
     }
 
     /**
@@ -52,6 +80,12 @@ class Join
     {
         $tables = $this->getTables();
         return array_pop($tables);
+    }
+
+    public function pathStart()
+    {
+        $tables = $this->getTables();
+        return array_shift($tables);
     }
 
     public function pathEndAs()
@@ -69,9 +103,6 @@ class Join
         $this->path = $table.'.'.$this->path;
     }
 
-    /**
-     * @return string
-     */
     public function getFetcherClass(): string
     {
         return $this->fetcherClass;
@@ -89,7 +120,7 @@ class Join
 
     public function isLeftJoin()
     {
-        return $this->type = 'left';
+        return $this->type === 'left';
     }
 
     public function setFullJoin()
@@ -109,3 +140,38 @@ class Join
         return $table;
     }
 }
+
+class JoinLink
+{
+    private $tableFrom;
+    private $tableTo;
+    private $type;
+    public $prev;
+    public $next;
+
+    public function __construct(string $tableFrom, string $tableTo, string $type)
+    {
+        $this->tableFrom = $tableFrom;
+        $this->tableTo = $tableTo;
+        $this->type = $type;
+        $prev = null;
+        $next = null;
+    }
+
+    public function getTableFrom(): string
+    {
+        return $this->tableFrom;
+    }
+
+    public function getTableTo(): string
+    {
+        return $this->tableTo;
+    }
+
+    public function getType(): string
+    {
+        return $this->type;
+    }
+}
+
+

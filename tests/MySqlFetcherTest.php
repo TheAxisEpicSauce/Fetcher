@@ -10,6 +10,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Helpers\MysqlDbHelper;
 use Tests\MySqlFetchers\AddressFetcher;
 use Tests\MySqlFetchers\UserFetcher;
+require __DIR__.'/../vendor/autoload.php';
 
 class MySqlFetcherTest extends TestCase
 {
@@ -167,5 +168,10 @@ class MySqlFetcherTest extends TestCase
         $this->assertEquals([
             ['id' => 3, 'street' => 'Ommerbos', 'number' => '28']
         ], $query);
+    }
+
+    public function testSubFetch()
+    {
+        $query = UserFetcher::build()->sub('address', function() {});
     }
 }
