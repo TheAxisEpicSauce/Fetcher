@@ -14,6 +14,7 @@ use Fetcher\Field\Conjunction;
 use Fetcher\Field\GroupField;
 use Fetcher\Field\ObjectField;
 use Fetcher\Field\Operator;
+use Fetcher\Field\SubFetchField;
 use Fetcher\Join\Join;
 use PDO;
 
@@ -61,7 +62,49 @@ abstract class MySqlFetcher extends BaseFetcher
         $stmt = $pdo->prepare($this->queryString);
         $stmt->execute($this->queryValues);
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $list = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (count($this->subFetches) > 0) {
+            $subFetchedData = [];
+            $key = $this->key;
+            $primaryKeys = array_map(function ($item) use ($key) {return (int) $item[$key];}, $list);
+            foreach ($this->subFetches as $name => [$field, $subFetch]) {
+                $data = $subFetch->where(sprintf('%s.%s', $this->table, $this->key), 'IN', $primaryKeys)->get();
+                foreach ($data as $item) {
+                    $keyVal = $item['copium'];
+                    unset($item['copium']);
+                    if ($field->getMethod() === 'first')
+                    {
+                        if (array_key_exists($name, $subFetchedData) && array_key_exists($keyVal, $subFetchedData[$name])) continue;
+                        $subFetchedData[$name][$keyVal] = $item;
+                    } else
+                        {
+                        $subFetchedData[$name][$keyVal][] = $item;
+                    }
+                }
+            }
+
+            foreach ($list as $index => $item)
+            {
+                foreach ($subFetchedData as $name => $subData)
+                {
+                    if (array_key_exists($item[$key], $subData))
+                    {
+                        if ($field->getMethod() == 'count') {
+                            $list[$index][$name] = count($subData[$item[$key]]);
+                        } else {
+                            $list[$index][$name] = $subData[$item[$key]];
+                        }
+                    }
+                    else
+                    {
+                        $list[$index][$name] = [];
+                    }
+                }
+            }
+        }
+
+        return $list;
     }
 
     private function getSelectString()
@@ -177,6 +220,18 @@ abstract class MySqlFetcher extends BaseFetcher
                 $fields = [];
                 foreach ($field->getFields() as $f) $fields[] = $fieldToStringClosure($f);
                 return '('.implode($field->getConjunction()===Conjunction::AND?' AND ':' OR ', $fields).')';
+            } elseif ($field instanceof SubFetchField) {
+                $fetcher = self::build();
+                $fetcher->joinsToMake[] = $field->getJoin();
+                $fetcher->fieldGroup = $field->getFetcher()->fieldGroup;
+                $fetcher->select = $field->getFetcher()->select;
+                $fetcher->groupByFields = [];
+                $fetcher->select[] = sprintf('`%s`.`%s` AS `copium`', $this->table, $this->key);
+
+                $this->subFetches[$field->getName()] = [
+                    $field,
+                    $fetcher
+                ];
             }
             return '';
         };

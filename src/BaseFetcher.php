@@ -124,6 +124,8 @@ abstract class BaseFetcher implements Fetcher
 
     protected static $joinsAs = [];
 
+    protected $subFetches = [];
+
     /**
      * BaseFetcher constructor.
      * @param string|null $as
@@ -311,7 +313,9 @@ abstract class BaseFetcher implements Fetcher
             }
 
             $success = $this->handleWhere($field, $value, $operator);
-            if (!$success && strpos($field, '.')) $success = $this->handleJoin($field, $value, $operator);
+            if (!$success && strpos($field, '.')) {
+                $success = $this->handleJoin($field, $value, $operator);
+            }
             if (!$success) throw new Exception('Cannot find field '.$field);
         } else {
             throw new BadMethodCallException(sprintf('Call to unknown method %s', $method));
@@ -343,13 +347,13 @@ abstract class BaseFetcher implements Fetcher
         return $this;
     }
 
-    public function sub(string $table, Closure $closure)
+    public function sub(string $table, Closure $closure, ?string $method = 'get')
     {
         $join = $this->findJoin([$table]);
         $fetcherClass = $join->getFetcherClass();
         $fetcher = ($fetcherClass)::buildAnd();
         $closure($fetcher);
-        $this->fieldGroup->addField(new SubFetchField($fetcher, $join));
+        $this->fieldGroup->addField(new SubFetchField($fetcher, $join, $table, $method));
         return $this;
     }
 
@@ -554,6 +558,9 @@ abstract class BaseFetcher implements Fetcher
         } else {
             $field = $fullField;
         }
+
+        [$table, $field] = $this->explodeField($field);
+        if ($table !== $this->table) return null;
 
         if (!$this->validateField($field)) return null;
         if (!$this->validateOperator($operator)) return null;

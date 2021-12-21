@@ -15,11 +15,15 @@ class SubFetchField implements Field
 {
     private $fetcher;
     private $join;
+    private $name;
+    private $method;
 
-    public function __construct(BaseFetcher $fetcher, Join $join)
+    public function __construct(BaseFetcher $fetcher, Join $join, string $name, string $method)
     {
         $this->fetcher = $fetcher;
         $this->join = $join;
+        $this->name = $name;
+        $this->method = $method;
     }
 
     public function getFetcher(): BaseFetcher
@@ -32,4 +36,13 @@ class SubFetchField implements Field
         return $this->join;
     }
 
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getMethod(): string
+    {
+        return $this->method;
+    }
 }
