@@ -788,6 +788,9 @@ abstract class BaseFetcher implements Fetcher
             $fullField = sprintf('GROUP_CONCAT(%s)', $fullField);
             $as = $as?:$field;
             $this->groupedFields[] = $as;
+        } elseif ($modifier === 'count') {
+            $fullField = sprintf('COUNT(%s)', $fullField);
+            $as = $as?:$field;
         }
 
         $selectString = sprintf('%s%s', $fullField, $as?' AS '.$as:'');
@@ -883,7 +886,7 @@ abstract class BaseFetcher implements Fetcher
 
     private function separateAs(string $field)
     {
-        if (preg_match('/(|^)([()a-zA-Z._]+)( AS | as )([()a-zA-Z._]+)(|$)/', $field, $matches)){
+        if (preg_match('/(|^)([()a-zA-Z._*]+)( AS | as )([()a-zA-Z._]+)(|$)/', $field, $matches)){
             return [
                 $matches[2],
                 $matches[4]
@@ -894,7 +897,7 @@ abstract class BaseFetcher implements Fetcher
 
     private function separateModifier(string $field)
     {
-        if (preg_match('/(|^)(group|)(\()([()a-zA-Z._]+)(\))(|$)/', $field, $matches)){
+        if (preg_match('/(|^)(group|count|)(\()([()a-zA-Z._*]+)(\))(|$)/', $field, $matches)){
             return [
                 $matches[4],
                 $matches[2]

@@ -39,6 +39,20 @@ class MysqlDbHelper
             ['bruce','pelissier','20',1],
             ['george','pelissier','16',3]
         ]);
+
+        $sql ="CREATE table note(id INT( 11 ) AUTO_INCREMENT PRIMARY KEY, user_id INT( 11 ) NOT NULL, content VARCHAR( 255 ) NOT NULL);";
+        self::client()->exec($sql);
+
+        self::insertData("INSERT INTO note (user_id, content) VALUES (?,?)", [
+            [1,'text of a note'],
+            [1,'text of a note'],
+            [1,'text of a note'],
+            [1,'text of a note'],
+            [2,'text of a note'],
+            [2,'text of a note'],
+            [3,'text of a note'],
+            [3,'text of a note']
+        ]);
     }
 
     private static function insertData(string $query, array $data)
@@ -53,5 +67,6 @@ class MysqlDbHelper
     {
         self::client()->exec('DROP table address;');
         self::client()->exec('DROP table user;');
+        self::client()->exec('DROP table note;');
     }
 }

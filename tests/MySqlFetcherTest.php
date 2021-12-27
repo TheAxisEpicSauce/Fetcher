@@ -170,8 +170,8 @@ class MySqlFetcherTest extends TestCase
         ], $query);
     }
 
-    public function testSubFetch()
-    {
-        $data = UserFetcher::build()->sub('address', function($q) {}, 'count')->get();
-    }
+//    public function testSubFetch()
+//    {
+//        $data = UserFetcher::build()->select(['user.*', 'count(note.id) as notes'])->get();
+//    }
 }

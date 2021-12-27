@@ -29,12 +29,18 @@ class UserFetcher extends MySqlFetcher
     public function getJoins(): array
     {
         return [
-            'address' => AddressFetcher::class
+            'address' => AddressFetcher::class,
+            'note' => NoteFetcher::class
         ];
     }
 
     public function joinAddress()
     {
         return 'address.id = user.address_id';
+    }
+
+    public function joinNote()
+    {
+        return 'note.user_id = user.id';
     }
 }
