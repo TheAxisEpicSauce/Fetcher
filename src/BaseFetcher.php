@@ -471,6 +471,9 @@ abstract class BaseFetcher implements Fetcher
 
         $tableFrom = $fetcherFrom->table;
         $method = 'join'.$this->studly($tableTo);
+
+        if (is_array($fetcherFrom->$method())) return 'MANY_TO_MANY';
+
         $string = strtolower($fetcherFrom->$method());
         if(strpos($string, 'and')) $string = substr($string, strpos($string, 'and'));
         $string = str_replace(['`', ' '], '', $string);
