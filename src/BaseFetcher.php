@@ -916,8 +916,6 @@ abstract class BaseFetcher implements Fetcher
 
     protected function explodeField(string $field)
     {
-        if (array_key_exists($field, $this->tableFields)) return $this->tableFields[$field];
-
         $field = str_replace('`', '', $field);
 
         $pos = strpos($field, '.');
