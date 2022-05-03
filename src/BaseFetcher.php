@@ -766,7 +766,7 @@ abstract class BaseFetcher implements Fetcher
 
             if ($join !== null) {
                 if (array_key_exists($join->pathEndAs(), $this->joinsToMake)) {
-                    $this->joinsToMake[$join->pathEndAs()]->setFullJoin();
+//                    $this->joinsToMake[$join->pathEndAs()]->setFullJoin();
                 } else {
                     $this->joinsToMake[$join->pathEndAs()] = $join;
                 }
