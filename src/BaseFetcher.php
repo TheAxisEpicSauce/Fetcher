@@ -616,7 +616,7 @@ abstract class BaseFetcher implements Fetcher
     public function pluck(string $field)
     {
         $this->select([$field]);
-        return array_map('array_pop', $this->get());
+        return array_map(fn ($i) => array_pop($i), $this->get());
     }
 
     /**
