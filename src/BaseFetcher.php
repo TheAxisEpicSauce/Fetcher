@@ -606,7 +606,7 @@ abstract class BaseFetcher implements Fetcher
         if (count($this->groupedFields) > 0) {
             foreach ($rows as $index => $row) {
                 foreach ($this->groupedFields as $groupField)
-                    $rows[$index][$groupField] = array_key_exists($groupField, $row)?explode(',', $row[$groupField]):[];
+                    $rows[$index][$groupField] = array_key_exists($groupField, $row)?array_unique(explode(',', $row[$groupField])):[];
             }
         }
 
@@ -636,7 +636,7 @@ abstract class BaseFetcher implements Fetcher
 
         if (count($this->groupedFields) > 0) {
             foreach ($this->groupedFields as $groupField)
-                $row[$groupField] = array_key_exists($groupField, $row)?explode(',', $row[$groupField]):[];
+                $row[$groupField] = array_key_exists($groupField, $row)?array_unique(explode(',', $row[$groupField])):[];
         }
 
         return $row;
