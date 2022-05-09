@@ -3,6 +3,7 @@
 namespace Tests;
 
 use Exception;
+use Fetcher\BaseFetcher;
 use Fetcher\MongoFetcher;
 use Fetcher\MySqlFetcher;
 use MongoDB\Client;
@@ -170,8 +171,46 @@ class MySqlFetcherTest extends TestCase
         ], $query);
     }
 
-//    public function testSubFetch()
-//    {
-//        $data = UserFetcher::build()->select(['user.*', 'count(note.id) as notes'])->get();
-//    }
+    public function testSubFetch()
+    {
+        $data = UserFetcher::build()->sub('note', function (BaseFetcher $fetcher) {
+            $fetcher->select(['note.content']);
+        })->get();
+
+        $this->assertEquals(
+            [
+                [
+                    "id" => "1",
+                    "first_name" => "raphael",
+                    "last_name" => "pelissier",
+                    "age" => "24",
+                    "address_id" => "2",
+                    "note" => [
+                        ["content" => "note 1 of raphael"],
+                        ["content" => "note 2 of raphael"],
+                        ["content" => "note 3 of raphael"],
+                        ["content" => "note 4 of raphael"]
+                    ]
+                ], [
+                    "id" => "2",
+                    "first_name" => "bruce",
+                    "last_name" => "pelissier",
+                    "age" => "20",
+                    "address_id" => "1",
+                    "note" => [
+                        ["content" => "note 1 of bruce"]
+                    ]
+                ], [
+                    "id" => "3",
+                    "first_name" => "george",
+                    "last_name" => "pelissier",
+                    "age" => "16",
+                    "address_id" => "3",
+                    "note" => [
+                        ["content" => "note 1 of george"],
+                        ["content" => "note 2 of george"]
+                    ]
+                ]
+            ], $data);
+    }
 }

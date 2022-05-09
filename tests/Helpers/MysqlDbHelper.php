@@ -44,14 +44,13 @@ class MysqlDbHelper
         self::client()->exec($sql);
 
         self::insertData("INSERT INTO note (user_id, content) VALUES (?,?)", [
-            [1,'text of a note'],
-            [1,'text of a note'],
-            [1,'text of a note'],
-            [1,'text of a note'],
-            [2,'text of a note'],
-            [2,'text of a note'],
-            [3,'text of a note'],
-            [3,'text of a note']
+            [1,'note 1 of raphael'],
+            [1,'note 2 of raphael'],
+            [1,'note 3 of raphael'],
+            [1,'note 4 of raphael'],
+            [2,'note 1 of bruce'],
+            [3,'note 1 of george'],
+            [3,'note 2 of george']
         ]);
     }
 

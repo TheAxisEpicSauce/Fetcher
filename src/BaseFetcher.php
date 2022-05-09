@@ -510,6 +510,13 @@ abstract class BaseFetcher implements Fetcher
                 $repo->handleArray($field['fields']);
                 $this->fieldGroup->addField($repo->fieldGroup);
                 $this->joinsToMake = array_merge($this->joinsToMake, $repo->joinsToMake);
+            }  elseif ($this->isArraySub($field)) {
+                $this->sub($field['table'])
+                $fetcher = $field['type']===Conjunction::OR?self::buildOr():self::buildAnd();
+                $fet
+                $fetcher->handleArray($field['fields']);
+                $this->fieldGroup->addField($repo->fieldGroup);
+                $this->joinsToMake = array_merge($this->joinsToMake, $repo->joinsToMake);
             } else {
                 throw new Exception('Cannot handle given field');
             }
@@ -524,6 +531,11 @@ abstract class BaseFetcher implements Fetcher
     private function isArrayGroup(array $group)
     {
         return array_key_exists('type', $group) && array_key_exists('fields', $group);
+    }
+
+    private function isArraySub(array $sub)
+    {
+        return array_key_exists('sub', $sub) && array_key_exists('fields', $sub);
     }
 
     //-------------------------------------------
