@@ -510,12 +510,12 @@ abstract class BaseFetcher implements Fetcher
                 $repo->handleArray($field['fields']);
                 $this->fieldGroup->addField($repo->fieldGroup);
                 $this->joinsToMake = array_merge($this->joinsToMake, $repo->joinsToMake);
-            }  elseif ($this->isArraySub($field)) {
-                $this->sub($field['table'])
-                $fetcher = $field['type']===Conjunction::OR?self::buildOr():self::buildAnd();
-                $fetcher->handleArray($field['fields']);
-                $this->fieldGroup->addField($repo->fieldGroup);
-                $this->joinsToMake = array_merge($this->joinsToMake, $repo->joinsToMake);
+//            }  elseif ($this->isArraySub($field)) {
+//                $this->sub($field['table']);
+//                $fetcher = $field['type']===Conjunction::OR?self::buildOr():self::buildAnd();
+//                $fetcher->handleArray($field['fields']);
+//                $this->fieldGroup->addField($repo->fieldGroup);
+//                $this->joinsToMake = array_merge($this->joinsToMake, $repo->joinsToMake);
             } else {
                 throw new Exception('Cannot handle given field');
             }
