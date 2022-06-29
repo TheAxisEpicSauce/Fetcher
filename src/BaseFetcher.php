@@ -513,7 +513,6 @@ abstract class BaseFetcher implements Fetcher
             }  elseif ($this->isArraySub($field)) {
                 $this->sub($field['table'])
                 $fetcher = $field['type']===Conjunction::OR?self::buildOr():self::buildAnd();
-                $fet
                 $fetcher->handleArray($field['fields']);
                 $this->fieldGroup->addField($repo->fieldGroup);
                 $this->joinsToMake = array_merge($this->joinsToMake, $repo->joinsToMake);
