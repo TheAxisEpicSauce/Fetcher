@@ -217,7 +217,7 @@ class MySqlFetcherTest extends TestCase
     public function testSubFetchArray()
     {
         $data = UserFetcher::buildFromArray([
-            'type' => 'or',
+            'type' => 'and',
             'fields' => [[
                 'table' => 'note',
                 'sub' => [
