@@ -14,7 +14,7 @@ use Fetcher\MySqlFetcher;
 
 class AddressFetcher extends MySqlFetcher
 {
-    protected $table = 'address';
+    protected ?string $table = 'address';
 
     public function getFields(): array
     {

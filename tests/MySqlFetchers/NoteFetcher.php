@@ -14,7 +14,7 @@ use Fetcher\MySqlFetcher;
 
 class NoteFetcher extends MySqlFetcher
 {
-    protected $table = 'note';
+    protected ?string $table = 'note';
 
     public function getFields(): array
     {

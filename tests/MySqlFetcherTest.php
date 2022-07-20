@@ -213,4 +213,58 @@ class MySqlFetcherTest extends TestCase
                 ]
             ], $data);
     }
+
+    public function testSubFetchArray()
+    {
+        $data = UserFetcher::buildFromArray([
+            'type' => 'or',
+            'fields' => [[
+                'table' => 'note',
+                'sub' => [
+                    'type' => 'and',
+                    'fields' => [],
+                    'select' => ['note.content']
+                ],
+                'method' => 'get'
+            ]]
+        ])->get();
+
+        $this->assertEquals(
+            [
+                [
+                    "id" => "1",
+                    "first_name" => "raphael",
+                    "last_name" => "pelissier",
+                    "age" => "24",
+                    "address_id" => "2",
+                    "note" => [
+                        ["content" => "note 1 of raphael"],
+                        ["content" => "note 2 of raphael"],
+                        ["content" => "note 3 of raphael"],
+                        ["content" => "note 4 of raphael"]
+                    ]
+                ], [
+                    "id" => "2",
+                    "first_name" => "bruce",
+                    "last_name" => "pelissier",
+                    "age" => "20",
+                    "address_id" => "1",
+                    "note" => [
+                        ["content" => "note 1 of bruce"]
+                    ]
+                ], [
+                    "id" => "3",
+                    "first_name" => "george",
+                    "last_name" => "pelissier",
+                    "age" => "16",
+                    "address_id" => "3",
+                    "note" => [
+                        ["content" => "note 1 of george"],
+                        ["content" => "note 2 of george"]
+                    ]
+                ]
+            ], $data);
+    }
 }
+
+

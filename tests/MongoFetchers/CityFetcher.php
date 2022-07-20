@@ -13,7 +13,7 @@ use Fetcher\MongoFetcher;
 
 class CityFetcher extends MongoFetcher
 {
-    protected $table = 'city';
+    protected ?string $table = 'city';
 
     public function getFields(): array
     {

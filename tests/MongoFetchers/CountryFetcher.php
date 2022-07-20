@@ -13,8 +13,8 @@ use Fetcher\MongoFetcher;
 
 class CountryFetcher extends MongoFetcher
 {
-    protected $table = 'country';
-    protected $key = 'code';
+    protected ?string $table = 'country';
+    protected ?string $key = 'code';
 
     public function getFields(): array
     {

@@ -31,19 +31,16 @@ use Symfony\Component\VarDumper\VarDumper;
  */
 abstract class BaseFetcher implements Fetcher
 {
-    /**
-     * @var PDO
-     */
     static $connection = null;
 
-    private $fieldPrefixRegex = null;
-    private $fieldPrefixes = [
+    private ?string $fieldPrefixRegex = null;
+    private array $fieldPrefixes = [
         '' => Operator::EQUALS,
         'is_' => Operator::EQUALS
     ];
 
-    private $fieldSuffixRegex = null;
-    private $fieldSuffixes = [
+    private ?string $fieldSuffixRegex = null;
+    private array $fieldSuffixes = [
         '' =>  Operator::EQUALS,
         '_is' =>  Operator::EQUALS,
         '_is_not' =>  Operator::NOT_EQUALS,
@@ -57,34 +54,16 @@ abstract class BaseFetcher implements Fetcher
         '_not_in' =>  Operator::NOT_IN
     ];
 
-    /**
-     * @var string
-     */
-    protected $table = null;
-    /**
-     * @var string
-     */
-    protected $key = 'id';
-    /**
-     * @var null|GroupField
-     */
-    protected $fieldGroup = null;
+    protected ?string $table = null;
+    protected ?string $key = 'id';
+    protected ?GroupField $fieldGroup = null;
     /**
      * @var array|Join[]
      */
     protected $joinsToMake = [];
-    /**
-     * @var string
-     */
-    protected $queryString;
-    /**
-     * @var array
-     */
-    protected $queryValues;
-    /**
-     * @var array
-     */
-    protected $select;
+    protected ?string $queryString;
+    protected ?array $queryValues;
+    protected array $select;
     /**
      * @var array|string[]
      */
@@ -93,34 +72,13 @@ abstract class BaseFetcher implements Fetcher
      * @var array|BaseFetcher[]
      */
     protected $tableFetcherLookup;
-    /**
-     * @var null|int
-     */
-    protected $take;
-    /**
-     * @var null|int
-     */
-    protected $skip;
-    /**
-     * @var FieldObjectValidator
-     */
-    private $fieldObjectValidator;
-    /**
-     * @var null|array
-     */
-    protected $groupByFields = null;
-    /**
-     * @var null|array
-     */
-    protected $orderByFields;
-    /**
-     * @var array
-     */
-    private $groupedFields = [];
-    /**
-     * @var string
-     */
-    protected $orderByDirection;
+    protected ?int $take = null;
+    protected ?int $skip = null;
+    private FieldObjectValidator $fieldObjectValidator;
+    protected ?array $groupByFields = null;
+    protected ?array $orderByFields;
+    private array $groupedFields = [];
+    protected string $orderByDirection;
 
     protected static $joinsAs = [];
 
@@ -177,27 +135,6 @@ abstract class BaseFetcher implements Fetcher
         return $fetcher;
     }
 
-    public static function buildFromArray(array $data)
-    {
-        $fetcher = new static();
-        $fetcher->mapFetchers(get_class($fetcher), $fetcher->table);
-
-        $fetcher->reset();
-
-        $fetcher->fieldGroup = new GroupField($data['type'], []);
-
-        if (array_key_exists('joins_as', $data)) {
-            foreach ($data['joins_as'] as $joinAs) {
-                $fetcher->addJoinAs($joinAs['table'], $joinAs['as'], $joinAs['filter']);
-            }
-        }
-
-        $fields = $data['fields'];
-        $fetcher->handleArray($fields);
-
-        return $fetcher;
-    }
-
     private function reset()
     {
         $this->joinsToMake = [];
@@ -222,14 +159,14 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     // Fetcher mapping
     //-------------------------------------------
-    private $fetcherIds = [];
-    private $fetchers = [];
-    private $tableIds = [];
-    private $tables = [];
-    private $visitedFetchers = [];
-    private $fetcherNodes = [];
-    private $tableNodes = [];
-    private $tableFetcherMap = [];
+    private array $fetcherIds = [];
+    private array $fetchers = [];
+    private array $tableIds = [];
+    private array $tables = [];
+    private array $visitedFetchers = [];
+    private array $fetcherNodes = [];
+    private array $tableNodes = [];
+    private array $tableFetcherMap = [];
 
     private function mapFetchers(string $currentFetcher, string $currentTable)
     {
@@ -499,42 +436,63 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     // Handle array call
     //-------------------------------------------
+    public static function buildFromArray(array $data)
+    {
+        $fetcher = new static();
+        $fetcher->mapFetchers(get_class($fetcher), $fetcher->table);
+
+        $fetcher->reset();
+
+        $fetcher->fieldGroup = new GroupField($data['type'], []);
+
+        if (array_key_exists('joins_as', $data)) {
+            foreach ($data['joins_as'] as $joinAs) {
+                $fetcher->addJoinAs($joinAs['table'], $joinAs['as'], $joinAs['filter']);
+            }
+        }
+
+        $fields = $data['fields'];
+        $fetcher->handleArray($fields);
+
+        if (array_key_exists('select', $data)) $fetcher->select($data['select']);
+
+        return $fetcher;
+    }
+
     private function handleArray(array $fields)
     {
         foreach ($fields as $field) {
-            if ($this->isArrayField($field)) {
+            if ($this->isParamField($field)) {
                 $success = $this->handleWhere($field['param'], $field['value']);
                 if (!$success) $this->handleJoin($field['param'], $field['value']);
-            } elseif ($this->isArrayGroup($field)) {
+            } elseif ($this->isGroupField($field)) {
                 $repo = $field['type']===Conjunction::OR?self::buildOr():self::buildAnd();
                 $repo->handleArray($field['fields']);
                 $this->fieldGroup->addField($repo->fieldGroup);
                 $this->joinsToMake = array_merge($this->joinsToMake, $repo->joinsToMake);
-//            }  elseif ($this->isArraySub($field)) {
-//                $this->sub($field['table']);
-//                $fetcher = $field['type']===Conjunction::OR?self::buildOr():self::buildAnd();
-//                $fetcher->handleArray($field['fields']);
-//                $this->fieldGroup->addField($repo->fieldGroup);
-//                $this->joinsToMake = array_merge($this->joinsToMake, $repo->joinsToMake);
+            }  elseif ($this->isSubField($field)) {
+                $join = $this->findJoin([$field['table']]);
+                $fetcher = $join->getFetcherClass()::buildFromArray($field['sub']);
+                $this->fieldGroup->addField(new SubFetchField($fetcher, $join, $field['table'], $field['method']));
             } else {
                 throw new Exception('Cannot handle given field');
             }
         }
     }
 
-    private function isArrayField(array $field)
+    private function isParamField(array $field): bool
     {
         return array_key_exists('param', $field) && array_key_exists('value', $field);
     }
 
-    private function isArrayGroup(array $group)
+    private function isGroupField(array $group): bool
     {
         return array_key_exists('type', $group) && array_key_exists('fields', $group);
     }
 
-    private function isArraySub(array $sub)
+    private function isSubField(array $sub): bool
     {
-        return array_key_exists('sub', $sub) && array_key_exists('fields', $sub);
+        return array_key_exists('sub', $sub) && array_key_exists('table', $sub);
     }
 
     //-------------------------------------------

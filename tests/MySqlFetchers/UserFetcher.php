@@ -13,7 +13,7 @@ use Fetcher\MySqlFetcher;
 
 class UserFetcher extends MySqlFetcher
 {
-    protected $table = 'user';
+    protected ?string $table = 'user';
 
     public function getFields(): array
     {
