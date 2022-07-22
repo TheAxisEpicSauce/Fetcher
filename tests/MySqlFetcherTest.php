@@ -263,7 +263,8 @@ class MySqlFetcherTest extends TestCase
                         ["content" => "note 2 of george"]
                     ]
                 ]
-            ], $data);
+            ], $data
+        );
     }
 }
 
