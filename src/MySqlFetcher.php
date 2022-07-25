@@ -69,43 +69,46 @@ abstract class MySqlFetcher extends BaseFetcher
             $subFetchFields = [];
             $key = $this->key;
             $primaryKeys = array_map(function ($item) use ($key) {return (int) $item[$key];}, $list);
-            foreach ($this->subFetches as $name => [$field, $subFetch]) {
-                $data = $subFetch->where(sprintf('%s.%s', $this->table, $this->key), 'IN', $primaryKeys)->get();
-                foreach ($data as $item) {
-                    $keyVal = $item['copium'];
-                    unset($item['copium']);
-                    if ($field->getMethod() === 'first')
-                    {
-                        if (array_key_exists($field->getAs()?:$name, $subFetchedData) && array_key_exists($keyVal, $subFetchedData[$field->getAs()?:$name])) continue;
-                        $subFetchedData[$field->getAs()?:$name][$keyVal] = $item;
+            if (count($primaryKeys) > 0) {
+                foreach ($this->subFetches as $name => [$field, $subFetch]) {
+                    $data = $subFetch->where(sprintf('%s.%s', $this->table, $this->key), 'IN', $primaryKeys)->get();
+                    foreach ($data as $item) {
+                        $keyVal = $item['copium'];
+                        unset($item['copium']);
+                        if ($field->getMethod() === 'first')
+                        {
+                            if (array_key_exists($field->getAs()?:$name, $subFetchedData) && array_key_exists($keyVal, $subFetchedData[$field->getAs()?:$name])) continue;
+                            $subFetchedData[$field->getAs()?:$name][$keyVal] = $item;
+                        }
+                        else
+                        {
+                            $subFetchedData[$field->getAs()?:$name][$keyVal][] = $item;
+                        }
+                        $subFetchFields[$field->getAs()?:$name] = $field;
                     }
-                    else
+                }
+
+                foreach ($list as $index => $item)
+                {
+                    foreach ($subFetchedData as $name => $subData)
                     {
-                        $subFetchedData[$field->getAs()?:$name][$keyVal][] = $item;
+                        if (array_key_exists($item[$key], $subData))
+                        {
+                            $field = $subFetchFields[$name];
+                            if ($field->getMethod() == 'count') {
+                                $list[$index][$name] = count($subData[$item[$key]]);
+                            } else {
+                                $list[$index][$name] = $subData[$item[$key]];
+                            }
+                        }
+                        else
+                        {
+                            $list[$index][$name] = [];
+                        }
                     }
-                    $subFetchFields[$field->getAs()?:$name] = $field;
                 }
             }
 
-            foreach ($list as $index => $item)
-            {
-                foreach ($subFetchedData as $name => $subData)
-                {
-                    if (array_key_exists($item[$key], $subData))
-                    {
-                        $field = $subFetchFields[$name];
-                        if ($field->getMethod() == 'count') {
-                            $list[$index][$name] = count($subData[$item[$key]]);
-                        } else {
-                            $list[$index][$name] = $subData[$item[$key]];
-                        }
-                    }
-                    else
-                    {
-                        $list[$index][$name] = [];
-                    }
-                }
-            }
         }
 
         return $list;
