@@ -228,7 +228,7 @@ abstract class MySqlFetcher extends BaseFetcher
                 }
                 return '('.implode($field->getConjunction()===Conjunction::AND?' AND ':' OR ', $fields).')';
             } elseif ($field instanceof SubFetchField) {
-                $fetcher = self::build();
+                $fetcher = $field->getFetcher();
                 $fetcher->joinsToMake[] = $field->getJoin();
                 $fetcher->fieldGroup = $field->getFetcher()->fieldGroup;
                 $fetcher->select = $field->getFetcher()->select;
