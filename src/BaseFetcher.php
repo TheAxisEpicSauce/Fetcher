@@ -284,13 +284,13 @@ abstract class BaseFetcher implements Fetcher
         return $this;
     }
 
-    public function sub(string $table, Closure $closure, ?string $method = 'get')
+    public function sub(string $table, Closure $closure, ?string $method, ?string $as)
     {
         $join = $this->findJoin([$table]);
         $fetcherClass = $join->getFetcherClass();
         $fetcher = ($fetcherClass)::buildAnd();
         $closure($fetcher);
-        $this->fieldGroup->addField(new SubFetchField($fetcher, $join, $table, $method));
+        $this->fieldGroup->addField(new SubFetchField($fetcher, $join, $table, $method, $as));
         return $this;
     }
 
@@ -473,7 +473,7 @@ abstract class BaseFetcher implements Fetcher
             }  elseif ($this->isSubField($field)) {
                 $join = $this->findJoin([$field['table']]);
                 $fetcher = $join->getFetcherClass()::buildFromArray($field['sub']);
-                $this->fieldGroup->addField(new SubFetchField($fetcher, $join, $field['table'], $field['method']));
+                $this->fieldGroup->addField(new SubFetchField($fetcher, $join, $field['table'], $field['method'], array_key_exists('as', $field)?$field['as']:null));
             } else {
                 throw new Exception('Cannot handle given field');
             }

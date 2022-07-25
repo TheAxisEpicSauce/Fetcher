@@ -175,7 +175,7 @@ class MySqlFetcherTest extends TestCase
     {
         $data = UserFetcher::build()->sub('note', function (BaseFetcher $fetcher) {
             $fetcher->select(['note.content']);
-        })->get();
+        }, 'get', 'notes')->get();
 
         $this->assertEquals(
             [
@@ -185,7 +185,7 @@ class MySqlFetcherTest extends TestCase
                     "last_name" => "pelissier",
                     "age" => "24",
                     "address_id" => "2",
-                    "note" => [
+                    "notes" => [
                         ["content" => "note 1 of raphael"],
                         ["content" => "note 2 of raphael"],
                         ["content" => "note 3 of raphael"],
@@ -197,7 +197,7 @@ class MySqlFetcherTest extends TestCase
                     "last_name" => "pelissier",
                     "age" => "20",
                     "address_id" => "1",
-                    "note" => [
+                    "notes" => [
                         ["content" => "note 1 of bruce"]
                     ]
                 ], [
@@ -206,7 +206,7 @@ class MySqlFetcherTest extends TestCase
                     "last_name" => "pelissier",
                     "age" => "16",
                     "address_id" => "3",
-                    "note" => [
+                    "notes" => [
                         ["content" => "note 1 of george"],
                         ["content" => "note 2 of george"]
                     ]
@@ -220,10 +220,12 @@ class MySqlFetcherTest extends TestCase
             'type' => 'and',
             'fields' => [[
                 'table' => 'note',
+                'as' => 'notes',
                 'sub' => [
                     'type' => 'and',
                     'fields' => [],
-                    'select' => ['note.content']
+                    'select' => ['note.content'],
+
                 ],
                 'method' => 'get'
             ]]
@@ -237,7 +239,7 @@ class MySqlFetcherTest extends TestCase
                     "last_name" => "pelissier",
                     "age" => "24",
                     "address_id" => "2",
-                    "note" => [
+                    "notes" => [
                         ["content" => "note 1 of raphael"],
                         ["content" => "note 2 of raphael"],
                         ["content" => "note 3 of raphael"],
@@ -249,7 +251,7 @@ class MySqlFetcherTest extends TestCase
                     "last_name" => "pelissier",
                     "age" => "20",
                     "address_id" => "1",
-                    "note" => [
+                    "notes" => [
                         ["content" => "note 1 of bruce"]
                     ]
                 ], [
@@ -258,7 +260,7 @@ class MySqlFetcherTest extends TestCase
                     "last_name" => "pelissier",
                     "age" => "16",
                     "address_id" => "3",
-                    "note" => [
+                    "notes" => [
                         ["content" => "note 1 of george"],
                         ["content" => "note 2 of george"]
                     ]

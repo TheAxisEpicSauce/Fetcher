@@ -75,11 +75,12 @@ abstract class MySqlFetcher extends BaseFetcher
                     unset($item['copium']);
                     if ($field->getMethod() === 'first')
                     {
-                        if (array_key_exists($name, $subFetchedData) && array_key_exists($keyVal, $subFetchedData[$name])) continue;
-                        $subFetchedData[$name][$keyVal] = $item;
-                    } else
-                        {
-                        $subFetchedData[$name][$keyVal][] = $item;
+                        if (array_key_exists($field->getAs()?:$name, $subFetchedData) && array_key_exists($keyVal, $subFetchedData[$field->getAs()?:$name])) continue;
+                        $subFetchedData[$field->getAs()?:$name][$keyVal] = $item;
+                    }
+                    else
+                    {
+                        $subFetchedData[$field->getAs()?:$name][$keyVal][] = $item;
                     }
                 }
             }
