@@ -218,7 +218,10 @@ abstract class MySqlFetcher extends BaseFetcher
                 return sprintf('`%s`.`%s` %s %s', $table, $field->getField(), $field->getOperator(), $marks);
             } elseif ($field instanceof GroupField) {
                 $fields = [];
-                foreach ($field->getFields() as $f) $fields[] = $fieldToStringClosure($f);
+                foreach ($field->getFields() as $f) {
+                    if ($f instanceof SubFetchField) $fieldToStringClosure($f);
+                    else $fields[] = $fieldToStringClosure($f);
+                }
                 return '('.implode($field->getConjunction()===Conjunction::AND?' AND ':' OR ', $fields).')';
             } elseif ($field instanceof SubFetchField) {
                 $fetcher = self::build();
