@@ -289,8 +289,9 @@ abstract class BaseFetcher implements Fetcher
         $join = $this->findJoin([$table]);
         $fetcherClass = $join->getFetcherClass();
         $fetcher = ($fetcherClass)::buildAnd();
+        $reverseJoin = $fetcher->findJoin([$this->table]);
         $closure($fetcher);
-        $this->fieldGroup->addField(new SubFetchField($fetcher, $join, $table, $method, $as));
+        $this->fieldGroup->addField(new SubFetchField($fetcher, $reverseJoin, $table, $method, $as));
         return $this;
     }
 
@@ -473,7 +474,8 @@ abstract class BaseFetcher implements Fetcher
             }  elseif ($this->isSubField($field)) {
                 $join = $this->findJoin([$field['table']]);
                 $fetcher = $join->getFetcherClass()::buildFromArray($field['sub']);
-                $this->fieldGroup->addField(new SubFetchField($fetcher, $join, $field['table'], $field['method'], array_key_exists('as', $field)?$field['as']:null));
+                $reverseJoin = $fetcher->findJoin([$this->table]);
+                $this->fieldGroup->addField(new SubFetchField($fetcher, $reverseJoin, $field['table'], $field['method'], array_key_exists('as', $field)?$field['as']:null));
             } else {
                 throw new Exception('Cannot handle given field');
             }
