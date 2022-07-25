@@ -66,6 +66,7 @@ abstract class MySqlFetcher extends BaseFetcher
 
         if (count($this->subFetches) > 0) {
             $subFetchedData = [];
+            $subFetchFields = [];
             $key = $this->key;
             $primaryKeys = array_map(function ($item) use ($key) {return (int) $item[$key];}, $list);
             foreach ($this->subFetches as $name => [$field, $subFetch]) {
@@ -82,6 +83,7 @@ abstract class MySqlFetcher extends BaseFetcher
                     {
                         $subFetchedData[$field->getAs()?:$name][$keyVal][] = $item;
                     }
+                    $subFetchFields[$field->getAs()?:$name] = $field;
                 }
             }
 
@@ -91,6 +93,7 @@ abstract class MySqlFetcher extends BaseFetcher
                 {
                     if (array_key_exists($item[$key], $subData))
                     {
+                        $field = $subFetchFields[$name];
                         if ($field->getMethod() == 'count') {
                             $list[$index][$name] = count($subData[$item[$key]]);
                         } else {
