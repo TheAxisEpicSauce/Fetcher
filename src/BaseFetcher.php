@@ -642,6 +642,11 @@ abstract class BaseFetcher implements Fetcher
         return $row?$row['total']:0;
     }
 
+    public function exists(): bool
+    {
+        return $this->count() > 0;
+    }
+
     public function sum(string $field)
     {
         $this->select([$field]);
