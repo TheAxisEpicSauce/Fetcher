@@ -27,7 +27,7 @@ use Symfony\Component\VarDumper\VarDumper;
 /**
  * Class BaseFetcher
  * @package Fetcher
- * @method self where(string $field, string $operator, ?string $value = null)
+ * @method static where(string $field, string $operator, ?string $value = null)
  */
 abstract class BaseFetcher implements Fetcher
 {
@@ -80,9 +80,9 @@ abstract class BaseFetcher implements Fetcher
     private array $groupedFields = [];
     protected string $orderByDirection;
 
-    protected static $joinsAs = [];
+    protected static array $joinsAs = [];
 
-    protected $subFetches = [];
+    protected array $subFetches = [];
 
     /**
      * BaseFetcher constructor.
@@ -500,7 +500,7 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     // Handle group call
     //-------------------------------------------
-    private function handleGroup($fullField, $param)
+    private function handleGroup($fullField, $param): bool
     {
         $repo = $fullField===Conjunction::OR?self::buildOr():self::buildAnd();
         $param($repo);
@@ -546,7 +546,7 @@ abstract class BaseFetcher implements Fetcher
         return $object;
     }
 
-    private function splitFullField(string $fullField)
+    private function splitFullField(string $fullField): ?array
     {
         if (preg_match($this->getFieldPrefixRegex(), $fullField, $matches)) {
             return [$matches[3], $this->fieldPrefixes[$matches[2]]];
@@ -563,13 +563,7 @@ abstract class BaseFetcher implements Fetcher
 
     abstract protected function executeQuery(): array;
 
-    /**
-     * Get all the elements
-     *
-     * @return array
-     * @throws Exception
-     */
-    public function get()
+    public function get(): array
     {
         $this->buildQuery();
 
@@ -590,7 +584,7 @@ abstract class BaseFetcher implements Fetcher
         return $rows;
     }
 
-    public function pluck(string $field)
+    public function pluck(string $field): array
     {
         $this->select([$field]);
         return array_map(fn ($i) => array_pop($i), $this->get());
@@ -602,7 +596,7 @@ abstract class BaseFetcher implements Fetcher
      * @return mixed|null
      * @throws Exception
      */
-    public function first()
+    public function first(): ?array
     {
         $this->take(1);
         $this->buildQuery();
@@ -633,7 +627,7 @@ abstract class BaseFetcher implements Fetcher
         return array_pop($row);
     }
 
-    public function count()
+    public function count(): int
     {
         $this->select = [sprintf('count(DISTINCT `%s`.`%s`) as total', $this->table, $this->key)];
         $this->groupByFields = null;
@@ -647,7 +641,7 @@ abstract class BaseFetcher implements Fetcher
         return $this->count() > 0;
     }
 
-    public function sum(string $field)
+    public function sum(string $field): int
     {
         $this->select([$field]);
 
@@ -663,7 +657,7 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     // Public Other
     //-------------------------------------------
-    public function toSql(bool $withBindings = false)
+    public function toSql(bool $withBindings = false): string
     {
         $this->buildQuery();
 
@@ -676,7 +670,7 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     public abstract function getFields(): array;
 
-    private function getFieldType(string $field)
+    private function getFieldType(string $field): string
     {
         return $this->getFields()[$field];
     }

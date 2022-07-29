@@ -34,6 +34,6 @@ class NoteFetcher extends MySqlFetcher
 
     public function joinUser()
     {
-        return 'user.id = content.user_id';
+        return 'user.id = note.user_id';
     }
 }

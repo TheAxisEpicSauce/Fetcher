@@ -56,35 +56,27 @@ abstract class MySqlFetcher extends BaseFetcher
 
     protected function executeQuery(): array
     {
-        if (static::$connection === null) throw new Exception('Connection not set');
-        $pdo = static::$connection;
+        $subFetchedData = [];
+        $subFetchFields = [];
 
-        $stmt = $pdo->prepare($this->queryString);
+        $stmt = static::$connection->prepare($this->queryString);
         $stmt->execute($this->queryValues);
 
         $list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         if (count($this->subFetches) > 0) {
-            $subFetchedData = [];
-            $subFetchFields = [];
-            $key = $this->key;
-            $primaryKeys = array_map(function ($item) use ($key) {return (int) $item[$key];}, $list);
+            $keyField = $this->key;
+            $primaryKeys = array_map(fn ($item) => (int) $item[$keyField], $list);
             if (count($primaryKeys) > 0) {
                 foreach ($this->subFetches as $name => [$field, $subFetch]) {
-                    $data = $subFetch->where(sprintf('%s.%s', $this->table, $this->key), 'IN', $primaryKeys)->get();
+                    $subFetch = $subFetch->where(sprintf('%s.%s', $this->table, $this->key), 'IN', $primaryKeys);
+
+                    $data = $subFetch->get();
                     foreach ($data as $item) {
                         $keyVal = $item['copium'];
                         unset($item['copium']);
-                        if ($field->getMethod() === 'first')
-                        {
-                            if (array_key_exists($field->getAs()?:$name, $subFetchedData) && array_key_exists($keyVal, $subFetchedData[$field->getAs()?:$name])) continue;
-                            $subFetchedData[$field->getAs()?:$name][$keyVal] = $item;
-                        }
-                        else
-                        {
-                            $subFetchedData[$field->getAs()?:$name][$keyVal][] = $item;
-                        }
-                        $subFetchFields[$field->getAs()?:$name] = $field;
+                        $subFetchedData[$name][$keyVal][] = $item;
+                        $subFetchFields[$name] = $field;
                     }
                 }
 
@@ -92,23 +84,21 @@ abstract class MySqlFetcher extends BaseFetcher
                 {
                     foreach ($subFetchedData as $name => $subData)
                     {
-                        if (array_key_exists($item[$key], $subData))
-                        {
-                            $field = $subFetchFields[$name];
-                            if ($field->getMethod() == 'count') {
-                                $list[$index][$name] = count($subData[$item[$key]]);
-                            } else {
-                                $list[$index][$name] = $subData[$item[$key]];
-                            }
-                        }
-                        else
-                        {
-                            $list[$index][$name] = [];
+                        /** @var SubFetchField $field */
+                        $field = $subFetchFields[$name];
+                        $hasKey = array_key_exists($item[$keyField], $subData);
+                        switch ($field->getMethod()) {
+                            case 'count':
+                                $list[$index][$name] = $hasKey?count($subData[$item[$keyField]]):0;break;
+                            case 'first':
+                                $list[$index][$name] = $hasKey?$subData[$item[$keyField]][0]:null;break;
+                            case 'get':
+                            default:
+                                $list[$index][$name] = $hasKey?$subData[$item[$keyField]]:[];break;
                         }
                     }
                 }
             }
-
         }
 
         return $list;
@@ -238,7 +228,7 @@ abstract class MySqlFetcher extends BaseFetcher
                 $fetcher->groupByFields = [];
                 $fetcher->select[] = sprintf('`%s`.`%s` AS `copium`', $this->table, $this->key);
 
-                $this->subFetches[$field->getName()] = [
+                $this->subFetches[$field->getAs()?:$field->getName()] = [
                     $field,
                     $fetcher
                 ];

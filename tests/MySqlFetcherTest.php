@@ -148,23 +148,23 @@ class MySqlFetcherTest extends TestCase
     {
         $count = AddressFetcher::build()->count();
 
-        $this->assertEquals(3, $count);
+        $this->assertEquals(4, $count);
     }
 
     public function testSum()
     {
         $sum = UserFetcher::build()->sum('age');
 
-        $this->assertEquals(60, $sum);
+        $this->assertEquals(82, $sum);
 
         $sum = UserFetcher::build()->sum('user.age');
 
-        $this->assertEquals(60, $sum);
+        $this->assertEquals(82, $sum);
     }
 
     public function testNotIn()
     {
-        $query = AddressFetcher::whereIdNotIn([1, 2])->get();
+        $query = AddressFetcher::whereIdNotIn([1, 2, 4])->get();
 
         $this->assertEquals([
             ['id' => 3, 'street' => 'Ommerbos', 'number' => '28']
@@ -175,7 +175,7 @@ class MySqlFetcherTest extends TestCase
     {
         $data = UserFetcher::build()->sub('note', function (BaseFetcher $fetcher) {
             $fetcher->select(['note.content']);
-        }, 'get', 'notes')->get();
+        }, 'get', 'notes')->select(['id', 'first_name', 'last_name'])->get();
 
         $this->assertEquals(
             [
@@ -183,8 +183,6 @@ class MySqlFetcherTest extends TestCase
                     "id" => "1",
                     "first_name" => "raphael",
                     "last_name" => "pelissier",
-                    "age" => "24",
-                    "address_id" => "2",
                     "notes" => [
                         ["content" => "note 1 of raphael"],
                         ["content" => "note 2 of raphael"],
@@ -195,8 +193,6 @@ class MySqlFetcherTest extends TestCase
                     "id" => "2",
                     "first_name" => "bruce",
                     "last_name" => "pelissier",
-                    "age" => "20",
-                    "address_id" => "1",
                     "notes" => [
                         ["content" => "note 1 of bruce"]
                     ]
@@ -204,12 +200,15 @@ class MySqlFetcherTest extends TestCase
                     "id" => "3",
                     "first_name" => "george",
                     "last_name" => "pelissier",
-                    "age" => "16",
-                    "address_id" => "3",
                     "notes" => [
                         ["content" => "note 1 of george"],
                         ["content" => "note 2 of george"]
                     ]
+                ], [
+                    "id" => "4",
+                    "first_name" => "john",
+                    "last_name" => "doe",
+                    "notes" => []
                 ]
             ], $data);
     }
@@ -228,7 +227,8 @@ class MySqlFetcherTest extends TestCase
 
                 ],
                 'method' => 'get'
-            ]]
+            ]],
+            'select' => ['id', 'first_name', 'last_name']
         ])->get();
 
         $this->assertEquals(
@@ -237,8 +237,6 @@ class MySqlFetcherTest extends TestCase
                     "id" => "1",
                     "first_name" => "raphael",
                     "last_name" => "pelissier",
-                    "age" => "24",
-                    "address_id" => "2",
                     "notes" => [
                         ["content" => "note 1 of raphael"],
                         ["content" => "note 2 of raphael"],
@@ -249,8 +247,6 @@ class MySqlFetcherTest extends TestCase
                     "id" => "2",
                     "first_name" => "bruce",
                     "last_name" => "pelissier",
-                    "age" => "20",
-                    "address_id" => "1",
                     "notes" => [
                         ["content" => "note 1 of bruce"]
                     ]
@@ -258,15 +254,29 @@ class MySqlFetcherTest extends TestCase
                     "id" => "3",
                     "first_name" => "george",
                     "last_name" => "pelissier",
-                    "age" => "16",
-                    "address_id" => "3",
                     "notes" => [
                         ["content" => "note 1 of george"],
                         ["content" => "note 2 of george"]
                     ]
+                ], [
+                    "id" => "4",
+                    "first_name" => "john",
+                    "last_name" => "doe",
+                    "notes" => []
                 ]
             ], $data
         );
+    }
+
+    public function testSubFetchSameTwice()
+    {
+        $data = UserFetcher::build()->sub('note', function (BaseFetcher $fetcher) {
+            $fetcher->select(['note.content']);
+        }, 'get', 'notes_a')->sub('note', function (BaseFetcher $fetcher) {
+            $fetcher->select(['note.content']);
+        }, 'get', 'notes_b')->select(['id'])->get();
+
+        dd($data);
     }
 }
 

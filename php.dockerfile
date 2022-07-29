@@ -1,4 +1,4 @@
-FROM php:7.4-cli-alpine
+FROM php:8.0-cli-alpine
 
 RUN apk add supervisor autoconf gcc libc-dev make openssl-dev
 
