@@ -88,15 +88,11 @@ abstract class MySqlFetcher extends BaseFetcher
                         /** @var SubFetchField $field */
                         $field = $subFetchFields[$name];
                         $hasKey = array_key_exists($item[$keyField], $subData);
-                        switch ($field->getMethod()) {
-                            case 'count':
-                                $list[$index][$name] = $hasKey?count($subData[$item[$keyField]]):0;break;
-                            case 'first':
-                                $list[$index][$name] = $hasKey?$subData[$item[$keyField]][0]:null;break;
-                            case 'get':
-                            default:
-                                $list[$index][$name] = $hasKey?$subData[$item[$keyField]]:[];break;
-                        }
+                        $list[$index][$name] = match ($field->getMethod()) {
+                            'count' => $hasKey ? count($subData[$item[$keyField]]) : 0,
+                            'first' => $hasKey ? $subData[$item[$keyField]][0] : null,
+                            default => $hasKey ? $subData[$item[$keyField]] : [],
+                        };
                     }
                 }
             }
