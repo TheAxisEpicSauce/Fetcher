@@ -71,12 +71,14 @@ abstract class MySqlFetcher extends BaseFetcher
                 foreach ($this->subFetches as $name => [$field, $subFetch]) {
                     $subFetch = $subFetch->where(sprintf('%s.%s', $this->table, $this->key), 'IN', $primaryKeys);
 
+                    $subFetchedData[$name] = [];
+                    $subFetchFields[$name] = $field;
+
                     $data = $subFetch->get();
                     foreach ($data as $item) {
                         $keyVal = $item['copium'];
                         unset($item['copium']);
                         $subFetchedData[$name][$keyVal][] = $item;
-                        $subFetchFields[$name] = $field;
                     }
                 }
 
