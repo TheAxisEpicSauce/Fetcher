@@ -69,6 +69,7 @@ abstract class MySqlFetcher extends BaseFetcher
             $primaryKeys = array_map(fn ($item) => (int) $item[$keyField], $list);
             if (count($primaryKeys) > 0) {
                 foreach ($this->subFetches as $name => [$field, $subFetch]) {
+                    /** @var MySqlFetcher $subFetch */
                     $subFetch = $subFetch->where(sprintf('%s.%s', $this->table, $this->key), 'IN', $primaryKeys);
 
                     $subFetchedData[$name] = [];
@@ -222,7 +223,10 @@ abstract class MySqlFetcher extends BaseFetcher
             } elseif ($field instanceof SubFetchField) {
                 $fetcher = $field->getFetcher();
                 $fetcher->joinsToMake[] = $field->getJoin();
-                $fetcher->fieldGroup = $field->getFetcher()->fieldGroup;
+
+                $fieldGroup = new GroupField(Conjunction::AND, [$field->getFetcher()->fieldGroup]);
+
+                $fetcher->fieldGroup = $fieldGroup;
                 $fetcher->select = $field->getFetcher()->select;
                 $fetcher->groupByFields = [];
                 $fetcher->select[] = sprintf('`%s`.`%s` AS `copium`', $this->table, $this->key);
