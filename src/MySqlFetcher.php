@@ -82,8 +82,9 @@ abstract class MySqlFetcher extends BaseFetcher
 
                 foreach ($list as $index => $item)
                 {
-                    foreach ($subFetchedData as $name => $subData)
+                    foreach ($this->subFetches as $name => $copium)
                     {
+                        $subData = $subFetchedData[$name];
                         /** @var SubFetchField $field */
                         $field = $subFetchFields[$name];
                         $hasKey = array_key_exists($item[$keyField], $subData);
