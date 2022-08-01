@@ -47,4 +47,9 @@ class GroupField implements Field
     {
         $this->fields[] = $field;
     }
+
+    public function isEmpty(): bool
+    {
+        return count($this->fields) === 0;
+    }
 }

@@ -224,7 +224,10 @@ abstract class MySqlFetcher extends BaseFetcher
                 $fetcher = $field->getFetcher();
                 $fetcher->joinsToMake[] = $field->getJoin();
 
-                $fieldGroup = new GroupField(Conjunction::AND, [$field->getFetcher()->fieldGroup]);
+                $fieldGroup = new GroupField(Conjunction::AND, []);
+                if (!$field->getFetcher()->fieldGroup->isEmpty()) {
+                    $fieldGroup->addField($field->getFetcher()->fieldGroup);
+                }
 
                 $fetcher->fieldGroup = $fieldGroup;
                 $fetcher->select = $field->getFetcher()->select;
