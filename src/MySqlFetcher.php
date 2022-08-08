@@ -75,7 +75,8 @@ abstract class MySqlFetcher extends BaseFetcher
                     $subFetchedData[$name] = [];
                     $subFetchFields[$name] = $field;
 
-                    $data = $subFetch->get();
+                    $subFetch->buildQuery();
+                    $data = $subFetch->executeQuery();
                     foreach ($data as $item) {
                         $keyVal = $item['copium'];
                         unset($item['copium']);
@@ -243,6 +244,10 @@ abstract class MySqlFetcher extends BaseFetcher
         };
 
         $where = substr($fieldToStringClosure($this->fieldGroup), 1, -1);
+        $emptyAnd = substr($where, 0, 7) === '() AND ';
+        if ($emptyAnd) {
+            $where = substr($where, 7);
+        }
 
         return empty($where)?'':' WHERE '.$where;
     }

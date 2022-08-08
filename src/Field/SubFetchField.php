@@ -13,18 +13,20 @@ use Fetcher\Join\Join;
 
 class SubFetchField implements Field
 {
-    private $fetcher;
-    private $join;
-    private $name;
-    private $method;
+    private BaseFetcher $fetcher;
+    private Join $join;
+    private string $name;
+    private string $method;
+    private ?string $methodField;
     private ?string $as;
 
-    public function __construct(BaseFetcher $fetcher, Join $join, string $name, string $method, ?string $as)
+    public function __construct(BaseFetcher $fetcher, Join $join, string $name, string $method, ?string $methodField, ?string $as)
     {
         $this->fetcher = $fetcher;
         $this->join = $join;
         $this->name = $name;
         $this->method = $method;
+        $this->methodField = $methodField;
         $this->as = $as;
     }
 
@@ -46,6 +48,11 @@ class SubFetchField implements Field
     public function getMethod(): string
     {
         return $this->method;
+    }
+
+    public function getMethodField(): ?string
+    {
+        return $this->methodField;
     }
 
     public function getAs(): ?string
