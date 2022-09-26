@@ -644,7 +644,9 @@ abstract class BaseFetcher implements Fetcher
         $this->groupByFields = null;
         $row = $this->first();
 
-        return $row?$row['total']:0;
+        $count = $row?$row['total']:0;
+
+        return is_int($count)?$count:0;
     }
 
     public function exists(): bool
@@ -662,7 +664,9 @@ abstract class BaseFetcher implements Fetcher
         $this->groupByFields = null;
         $row = $this->first();
 
-        return $row?$row['total']:0;
+        $sum = $row?$row['total']:0;
+
+        return is_int($sum)?$sum:0;
     }
 
     //-------------------------------------------
