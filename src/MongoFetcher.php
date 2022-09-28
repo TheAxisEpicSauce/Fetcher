@@ -177,7 +177,7 @@ abstract class MongoFetcher extends BaseFetcher
         foreach ($result as $item) {
             /** @var BSONDocument $item */
             $item = $item->getArrayCopy();
-            $item['id'] = (string) $item['id'];
+            $item['id'] = (string) $item['_id'];
             unset($item['_id']);
             $data[] = $item;
         }
