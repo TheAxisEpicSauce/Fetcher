@@ -14,15 +14,10 @@ use Exception;
 use Fetcher\Field\Operator;
 use Fetcher\Field\SubFetchField;
 use Fetcher\Validator\FieldObjectValidator;
-use PDO;
-use Fetcher\Field\Field;
 use Fetcher\Field\Conjunction;
 use Fetcher\Field\GroupField;
 use Fetcher\Field\ObjectField;
-use Fetcher\Field\FieldType;
 use Fetcher\Join\Join;
-use ReflectionClass;
-use Symfony\Component\VarDumper\VarDumper;
 
 /**
  * Class BaseFetcher
