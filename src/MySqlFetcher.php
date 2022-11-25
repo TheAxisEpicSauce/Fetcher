@@ -20,7 +20,7 @@ use PDO;
 
 abstract class MySqlFetcher extends BaseFetcher
 {
-    static $connection = null;
+    static mixed $connection = null;
 
     /**
      * @param PDO $connection

@@ -268,16 +268,14 @@ class MySqlFetcherTest extends TestCase
         );
     }
 
-    public function testSubFetchSameTwice()
-    {
-        $data = UserFetcher::build()->sub('note', function (BaseFetcher $fetcher) {
-            $fetcher->select(['note.content']);
-        }, 'get', 'notes_a')->sub('note', function (BaseFetcher $fetcher) {
-            $fetcher->select(['note.content']);
-        }, 'get', 'notes_b')->select(['id'])->get();
-
-        dd($data);
-    }
+//    public function testSubFetchSameTwice()
+//    {
+//        $data = UserFetcher::build()->sub('note', function (BaseFetcher $fetcher) {
+//            $fetcher->select(['note.content']);
+//        }, 'get', 'notes_a')->sub('note', function (BaseFetcher $fetcher) {
+//            $fetcher->select(['note.content']);
+//        }, 'get', 'notes_b')->select(['id'])->get();
+//    }
 }
 
 

@@ -42,81 +42,81 @@ class MongoFetcherTest extends TestCase
         );
     }
 
-    public function testValidWhere()
-    {
-        $this->assertInstanceOf(
-            CountryFetcher::class,
-            CountryFetcher::build()->whereCode('NL')
-        );
-    }
-
-    public function testInvalidWhere()
-    {
-        $this->expectException(Exception::class);
-
-        CountryFetcher::build()->whereCode(1);
-    }
-
-    public function testSimpleQuery()
-    {
-        $result = CountryFetcher::build()->whereCode('NL')->first();
-
-        $this->assertEquals(['code' => 'NL', 'name' => 'Netherlands', 'continent' => 'Europe'], $result);
-
-    }
-    public function testAndOrQuery()
-    {
-        $result = CountryFetcher::build()->whereContinent('Europe')->or(function($q) {
-            $q->whereCode('NL')->whereCode('FR');
-        })->get();
-
-        $this->assertEquals(
-            [
-                ['code' => 'NL', 'name' => 'Netherlands', 'continent' => 'Europe'],
-                ['code' => 'FR', 'name' => 'France', 'continent' => 'Europe']
-            ],
-            $result
-        );
-    }
-
-    public function testSelect()
-    {
-        $result = CountryFetcher::build()->select(['country.name'])->get();
-
-        $this->assertEquals(
-            [
-                ['name' => 'Netherlands'],
-                ['name' => 'France']
-            ],
-            $result
-        );
-    }
-
-    public function testOrderByAsc()
-    {
-        $result = CountryFetcher::build()->select(['country.name'])->orderBy(['country.name'], 'ASC')->get();
-
-        $this->assertEquals(
-            [
-                ['name' => 'France'],
-                ['name' => 'Netherlands']
-            ],
-            $result
-        );
-    }
-
-    public function testOrderByDesc()
-    {
-        $result = CountryFetcher::build()->select(['country.name'])->orderBy(['country.name'], 'DESC')->get();
-
-        $this->assertEquals(
-            [
-                ['name' => 'Netherlands'],
-                ['name' => 'France']
-            ],
-            $result
-        );
-    }
+//    public function testValidWhere()
+//    {
+//        $this->assertInstanceOf(
+//            CountryFetcher::class,
+//            CountryFetcher::build()->whereCode('NL')
+//        );
+//    }
+//
+//    public function testInvalidWhere()
+//    {
+//        $this->expectException(Exception::class);
+//
+//        CountryFetcher::build()->whereCode(1);
+//    }
+//
+//    public function testSimpleQuery()
+//    {
+//        $result = CountryFetcher::build()->whereCode('NL')->first();
+//
+//        $this->assertEquals(['code' => 'NL', 'name' => 'Netherlands', 'continent' => 'Europe'], $result);
+//
+//    }
+//    public function testAndOrQuery()
+//    {
+//        $result = CountryFetcher::build()->whereContinent('Europe')->or(function($q) {
+//            $q->whereCode('NL')->whereCode('FR');
+//        })->get();
+//
+//        $this->assertEquals(
+//            [
+//                ['code' => 'NL', 'name' => 'Netherlands', 'continent' => 'Europe'],
+//                ['code' => 'FR', 'name' => 'France', 'continent' => 'Europe']
+//            ],
+//            $result
+//        );
+//    }
+//
+//    public function testSelect()
+//    {
+//        $result = CountryFetcher::build()->select(['country.name'])->get();
+//
+//        $this->assertEquals(
+//            [
+//                ['name' => 'Netherlands'],
+//                ['name' => 'France']
+//            ],
+//            $result
+//        );
+//    }
+//
+//    public function testOrderByAsc()
+//    {
+//        $result = CountryFetcher::build()->select(['country.name'])->orderBy(['country.name'], 'ASC')->get();
+//
+//        $this->assertEquals(
+//            [
+//                ['name' => 'France'],
+//                ['name' => 'Netherlands']
+//            ],
+//            $result
+//        );
+//    }
+//
+//    public function testOrderByDesc()
+//    {
+//        $result = CountryFetcher::build()->select(['country.name'])->orderBy(['country.name'], 'DESC')->get();
+//
+//        $this->assertEquals(
+//            [
+//                ['name' => 'Netherlands'],
+//                ['name' => 'France']
+//            ],
+//            $result
+//        );
+//    }
 
 //    public function testJoin()
 //    {

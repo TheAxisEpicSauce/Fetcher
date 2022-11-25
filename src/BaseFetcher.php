@@ -22,7 +22,7 @@ use Fetcher\Join\Join;
 /**
  * Class BaseFetcher
  * @package Fetcher
- * @method static where(string $field, null|string|int $operator, null|string|int|array $value = null)
+ * @method self where(string $field, null|string|int $operator, null|string|int|array $value = null)
  */
 abstract class BaseFetcher implements Fetcher
 {
@@ -628,9 +628,9 @@ abstract class BaseFetcher implements Fetcher
         $this->groupByFields = null;
         $row = $this->first();
 
-        $count = $row?$row['total']:0;
+        $count = $row?(int) $row['total']:0;
 
-        return is_int($count)?$count:0;
+        return $count;
     }
 
     public function exists(): bool
@@ -648,9 +648,9 @@ abstract class BaseFetcher implements Fetcher
         $this->groupByFields = null;
         $row = $this->first();
 
-        $sum = $row?$row['total']:0;
+        $sum = $row?(int) $row['total']:0;
 
-        return is_int($sum)?$sum:0;
+        return $sum;
     }
 
     //-------------------------------------------
@@ -688,7 +688,7 @@ abstract class BaseFetcher implements Fetcher
         return $this->fieldSuffixRegex = '/( |^)('.implode("|", array_keys($this->getFields())).')('.implode("|", array_keys($this->fieldSuffixes)).')( |$)/';
     }
 
-    protected static function getTable(): ?string
+    public static function getTable(): ?string
     {
         $fetcher = new static();
         return $fetcher->table;
