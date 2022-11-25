@@ -22,7 +22,7 @@ use Fetcher\Join\Join;
 /**
  * Class BaseFetcher
  * @package Fetcher
- * @method static where(string $field, string $operator, ?string $value = null)
+ * @method static where(string $field, null|string|int $operator, null|string|int|array $value = null)
  */
 abstract class BaseFetcher implements Fetcher
 {
