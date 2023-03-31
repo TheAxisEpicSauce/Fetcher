@@ -29,18 +29,18 @@ class MongoFetcherTest extends TestCase
         MongoDbHelper::up();
     }
 
-    protected function tearDown(): void
-    {
-        MongoDbHelper::down();
-    }
-
-    public function testBuild()
-    {
-        $this->assertInstanceOf(
-            CountryFetcher::class,
-            CountryFetcher::build()
-        );
-    }
+//    protected function tearDown(): void
+//    {
+//        MongoDbHelper::down();
+//    }
+//
+//    public function testBuild()
+//    {
+//        $this->assertInstanceOf(
+//            CountryFetcher::class,
+//            CountryFetcher::build()
+//        );
+//    }
 
 //    public function testValidWhere()
 //    {

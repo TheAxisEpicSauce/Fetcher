@@ -64,7 +64,10 @@ class FetcherCache
 
     public function loadCache(): bool
     {
-        
+        $content = file_get_contents(self::$CachePath);
+
+        self::$cache = json_decode($content, true);
+        return true;
     }
 
     public function cacheFetchers(): bool
@@ -72,6 +75,7 @@ class FetcherCache
         $fetcherClasses = [];
         $this->scanDir(self::$FetcherDir, $fetcherClasses);
 
+        $keys = [];
         $fetchers = [];
         $fetcherIds = [];
         $tables = [];
@@ -86,7 +90,9 @@ class FetcherCache
         $graph = [];
 
         foreach ($fetcherClasses as $index => $fetcherClass) {
+            /** @var BaseFetcher $fetcher */
             $fetcher = $objects[$index] = new $fetcherClass();
+            $keys[$index] = $fetcher->getKey();
 
             $fetchers[$index] = $fetcherClass;
             $fetcherIds[$fetcherClass] = $index;
@@ -100,8 +106,8 @@ class FetcherCache
         foreach ($objects as $index => $object) {
             $joins = $object->getJoins();
             $graph[$index] = [];
-            foreach ($joins as $join => $fetcher) {
-                $graph[$index][$join] = $fetcherIds[$fetcher];
+            foreach ($joins as $join => $class) {
+                $graph[$index][$join] = $fetcherIds[$class];
             }
 
             $prefixes[$index] = '/( |^)('.implode("|", array_keys($this->fieldPrefixes)).')('.implode("|", array_keys($object->getFields())).')( |$)/';
@@ -109,10 +115,11 @@ class FetcherCache
         }
 
         self::$cache = [
+            'keys' => $keys,
             'fetchers' => $fetchers,
             'fetcher_ids' => $fetcherIds,
             'tables' => $tables,
-            'tableIds' => $tableIds,
+            'table_ids' => $tableIds,
             'prefixes' => $prefixes,
             'suffixes' => $suffixes,
             'graph' => $graph
@@ -145,5 +152,78 @@ class FetcherCache
                 $fetchers[] = $file;
             }
         }
+    }
+
+    //-------------------------------------------
+    // Getters
+    //-------------------------------------------
+    public function getFetcherKey(int $id)
+    {
+        return self::$cache['keys'][$id];
+    }
+
+    public function getFetchers()
+    {
+        return self::$cache['fetchers'];
+    }
+
+    public function getFetcher(int $id)
+    {
+        return self::$cache['fetchers'][$id];
+    }
+
+    public function getFetcherIds()
+    {
+        return self::$cache['fetcher_ids'];
+    }
+
+    public function getTables()
+    {
+        return self::$cache['tables'];
+    }
+
+    public function getTable(int $id)
+    {
+        return self::$cache['tables'][$id];
+    }
+
+    public function getTableIds()
+    {
+        return self::$cache['table_ids'];
+    }
+
+    public function getTableId(string $table)
+    {
+        return self::$cache['table_ids'][$table];
+    }
+
+    public function getPrefixes()
+    {
+        return self::$cache['prefixes'];
+    }
+
+    public function getPrefix(int $fetcherId)
+    {
+        return self::$cache['prefixes'][$fetcherId];
+    }
+
+    public function getSuffixes()
+    {
+        return self::$cache['suffixes'];
+    }
+
+    public function getSuffix(int $fetcherId)
+    {
+        return self::$cache['suffixes'][$fetcherId];
+    }
+
+    public function getGraph()
+    {
+        return self::$cache['graph'];
+    }
+
+    public function getNodeLinks(int $fetcherId)
+    {
+        return self::$cache['graph'][$fetcherId];
     }
 }

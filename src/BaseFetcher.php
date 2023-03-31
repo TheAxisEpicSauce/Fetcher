@@ -11,6 +11,7 @@ namespace Fetcher;
 use BadMethodCallException;
 use Closure;
 use Exception;
+use Fetcher\Field\Graph;
 use Fetcher\Field\Operator;
 use Fetcher\Field\SubFetchField;
 use Fetcher\Validator\FieldObjectValidator;
@@ -28,13 +29,11 @@ abstract class BaseFetcher implements Fetcher
 {
     static mixed $connection = null;
 
-    private ?string $fieldPrefixRegex = null;
     private array $fieldPrefixes = [
         '' => Operator::EQUALS,
         'is_' => Operator::EQUALS
     ];
 
-    private ?string $fieldSuffixRegex = null;
     private array $fieldSuffixes = [
         '' =>  Operator::EQUALS,
         '_is' =>  Operator::EQUALS,
@@ -93,9 +92,19 @@ abstract class BaseFetcher implements Fetcher
 
     public abstract static function setConnection($connection): void;
 
+    public function getKey()
+    {
+        return $this->key;
+    }
+
     public function getName(): string
     {
         return str_replace(['/', '\\'], '.', get_class($this));
+    }
+
+    private function fetcherId()
+    {
+        return FetcherCache::Instance()->getFetcherIds()[static::class];
     }
 
     //-------------------------------------------
@@ -109,7 +118,6 @@ abstract class BaseFetcher implements Fetcher
     public static function buildAnd(): self
     {
         $fetcher = new static();
-        $fetcher->mapFetchers(get_class($fetcher), $fetcher->table);
 
         $fetcher->reset();
 
@@ -121,7 +129,6 @@ abstract class BaseFetcher implements Fetcher
     public static function buildOr(): self
     {
         $fetcher = new static();
-        $fetcher->mapFetchers(get_class($fetcher), $fetcher->table);
 
         $fetcher->reset();
 
@@ -163,53 +170,11 @@ abstract class BaseFetcher implements Fetcher
     private array $tableNodes = [];
     private array $tableFetcherMap = [];
 
-    private function mapFetchers(string $currentFetcher, string $currentTable)
-    {
-        $currentFetcherId = $this->getFetcherId($currentFetcher);
-        $currentTableId = $this->getTableId($currentTable);
-
-        $this->visitedFetchers[$currentFetcherId] = $currentFetcher;
-
-        $fetchers = (new $currentFetcher)->getJoins();
-
-        foreach ($fetchers as $table => $fetcher) {
-            $fetcherId = $this->getFetcherId($fetcher);
-            $tableId = $this->getTableId($table);
-
-            $this->tableFetcherMap[$tableId] = $fetcherId;
-
-            $this->fetcherNodes[$currentFetcherId] = $fetcherId;
-            $this->tableNodes[$tableId][$currentTableId] = $currentTableId;
-
-            if (array_key_exists($fetcherId, $this->visitedFetchers)) continue;
-
-            $this->mapFetchers($fetcher, $table);
-        }
-    }
-
     private function joinIdList(int $fromId, int $toId): ?string
     {
-        $ids = $this->tableNodes[$toId];
-        if (array_key_exists($fromId, $ids)) return "";
-
-        foreach ($ids as $id) {
-            $list = $this->joinIdList($fromId, $id);
-            if ($list === null) return null;
-            else return "$list$id|";
-        }
+        $graph = new Graph(FetcherCache::Instance()->getGraph());
+        return $graph->breadthFirstSearch($fromId, $toId);;
         return null;
-    }
-
-
-    private function getFetcherId($fetcherClass): int
-    {
-        if (!array_key_exists($fetcherClass, $this->fetcherIds)) {
-            static $fetcherId = 0; $fetcherId++;
-            $this->fetcherIds[$fetcherClass] = $fetcherId;
-            $this->fetchers[$fetcherId] = $fetcherClass;
-        }
-
-        return $this->fetcherIds[$fetcherClass];
     }
 
     private function getTableId($table): int
@@ -340,10 +305,10 @@ abstract class BaseFetcher implements Fetcher
 
         $pathTraveled = false;
 
-        $baseId = $this->getTableId($this->table);
+        $baseId = $fromId = $this->fetcherId();
 
         $list = null;
-        $tableId = null;
+        $toId = null;
 
         $tableMappings = [];
 
@@ -359,29 +324,24 @@ abstract class BaseFetcher implements Fetcher
                 $pathTraveled = true;
             }
 
-            if ($list !== null && $tableId !== null) $list .= $tableId.'|';
+            $toId = FetcherCache::Instance()->getTableId($tableTo);
 
-            $tableId = array_key_exists($tableTo, $this->tableIds)?$this->tableIds[$tableTo]:null;
-            if ($tableId === null) throw new Exception(sprintf('table %s not found', $tableTo));
-
-            $list .= $this->joinIdList($baseId, $tableId);
-            $baseId = $tableId;
+            $list = $this->joinIdList($fromId, $toId);
+            $fromId = $toId;
 
         } while (!$pathTraveled);
 
-        $list = array_reverse(explode('|', $list));
+        $list = array_reverse(explode('->', $list));
 
-        $tableTo = $this->tables[$tableId];
-        $join = new Join($this->fetchers[$this->tableFetcherMap[$tableId]]);
+        $tableTo = FetcherCache::Instance()->getTable($toId);
+        $join = new Join(FetcherCache::Instance()->getFetcher($toId));
 
         foreach ($list as $id) {
-            if (empty($id)) continue;
-            $fetcherFrom = new $this->fetchers[$this->tableFetcherMap[$id]];
-            $join->addLink($this->tables[$id], $tableTo, $this->joinType($fetcherFrom, $tableTo));
-            $tableTo = $this->tables[$id];
+            $id = (int) $id;
+            if ($id === $toId) continue;
+            $join->addLink(FetcherCache::Instance()->getTable($id), $tableTo, $this->joinType($id, $toId));
+            $tableTo = FetcherCache::Instance()->getTable($id);
         }
-
-        $join->addLink($this->table, $tableTo, $this->joinType($this, $tableTo));
 
         foreach ($tableMappings as $a => $b) {
             $join->addTableMapping($b, $a);
@@ -391,15 +351,15 @@ abstract class BaseFetcher implements Fetcher
         return $join;
     }
 
-    protected function joinType(self $fetcherFrom, string $tableTo): string
+    protected function joinType(int $fromId, int $toId): string
     {
-        $fetcherToClass = $fetcherFrom->getJoins()[$tableTo];
-        $fetcherTo = new $fetcherToClass;
+        $fetcherFrom = new (FetcherCache::Instance()->getFetcher($fromId));
 
-        $keyFrom = $fetcherFrom->key;
-        $keyTo = $fetcherTo->key;
+        $keyFrom = FetcherCache::Instance()->getFetcherKey($fromId);
+        $keyTo = FetcherCache::Instance()->getFetcherKey($toId);
 
-        $tableFrom = $fetcherFrom->table;
+        $tableFrom = FetcherCache::Instance()->getTable($fromId);
+        $tableTo = FetcherCache::Instance()->getTable($toId);
         $method = 'join'.$this->studly($tableTo);
 
         if (is_array($fetcherFrom->$method())) return 'MANY_TO_MANY';
@@ -678,14 +638,12 @@ abstract class BaseFetcher implements Fetcher
 
     private function getFieldPrefixRegex(): string
     {
-        if ($this->fieldPrefixRegex !== null) return $this->fieldPrefixRegex;
-        return $this->fieldPrefixRegex = '/( |^)('.implode("|", array_keys($this->fieldPrefixes)).')('.implode("|", array_keys($this->getFields())).')( |$)/';
+        return FetcherCache::Instance()->getPrefix($this->fetcherId());
     }
 
     private function getFieldSuffixRegex(): string
     {
-        if ($this->fieldSuffixRegex !== null) return $this->fieldSuffixRegex;
-        return $this->fieldSuffixRegex = '/( |^)('.implode("|", array_keys($this->getFields())).')('.implode("|", array_keys($this->fieldSuffixes)).')( |$)/';
+        return FetcherCache::Instance()->getSuffix($this->fetcherId());
     }
 
     public static function getTable(): ?string
@@ -714,7 +672,7 @@ abstract class BaseFetcher implements Fetcher
                 $table = array_pop($tables);
                 $tables[] = $table;
             } else {
-                $table = $this->table;
+                $table = $tables[] = $this->table;
             }
 
             $join = null;

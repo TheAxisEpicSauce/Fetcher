@@ -5,15 +5,8 @@ namespace Tests;
 require __DIR__.'/../vendor/autoload.php';
 
 use Exception;
-use Fetcher\BaseFetcher;
 use Fetcher\FetcherCache;
-use Fetcher\MongoFetcher;
-use Fetcher\MySqlFetcher;
-use MongoDB\Client;
 use PHPUnit\Framework\TestCase;
-use Tests\Helpers\MysqlDbHelper;
-use Tests\MySqlFetchers\AddressFetcher;
-use Tests\MySqlFetchers\UserFetcher;
 
 class FetcherCacheTest extends TestCase
 {
@@ -40,6 +33,8 @@ class FetcherCacheTest extends TestCase
 
     public function testFetcherCache()
     {
+        $this->expectNotToPerformAssertions();
+
         FetcherCache::Instance()->cacheFetchers();
     }
 }
