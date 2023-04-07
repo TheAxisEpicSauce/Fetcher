@@ -233,9 +233,20 @@ abstract class MySqlFetcher extends BaseFetcher
                 }
 
                 $fetcher->fieldGroup = $fieldGroup;
-                $fetcher->select = $field->getFetcher()->select;
+                if ($field->getMethod() === 'count')
+                {
+                    $fetcher->select = [
+                        $field->getFetcher()->table.'.'.$field->getFetcher()->key,
+                        sprintf('`%s`.`%s` AS `copium`', $this->table, $this->key)
+                    ];
+                }
+                else
+                {
+                    $fetcher->select = $field->getFetcher()->select;
+                    $fetcher->select[] = sprintf('`%s`.`%s` AS `copium`', $this->table, $this->key);
+                }
+
                 $fetcher->groupByFields = [];
-                $fetcher->select[] = sprintf('`%s`.`%s` AS `copium`', $this->table, $this->key);
 
                 $this->subFetches[$field->getAs()?:$field->getName()] = [
                     $field,
