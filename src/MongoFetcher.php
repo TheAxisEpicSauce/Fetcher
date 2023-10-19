@@ -21,7 +21,7 @@ use MongoDB\Model\BSONDocument;
 
 abstract class MongoFetcher extends BaseFetcher
 {
-    static $connection = null;
+    static mixed $connection = null;
 
     private $operators = [
         Operator::EQUALS => '$eq',

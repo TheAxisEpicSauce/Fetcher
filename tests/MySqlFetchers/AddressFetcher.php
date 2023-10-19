@@ -1,14 +1,7 @@
 <?php
-/**
- * User: Raphael Pelissier
- * Date: 23-07-20
- * Time: 10:44
- */
 
 namespace Tests\MySqlFetchers;
 
-
-use Fetcher\BaseFetcher;
 use Fetcher\Field\FieldType;
 use Fetcher\MySqlFetcher;
 
@@ -21,12 +14,26 @@ class AddressFetcher extends MySqlFetcher
         return [
             'id' => FieldType::INT,
             'street' => FieldType::STRING,
-            'number' => FieldType::STRING
+            'number' => FieldType::STRING,
+            'postcode' => FieldType::STRING
         ];
     }
 
     public function getJoins(): array
     {
-        return [];
+        return [
+            'person' => PersonFetcher::class,
+            'job' => JobFetcher::class
+        ];
+    }
+
+    public function joinPerson()
+    {
+        return 'person.address_id = address.id';
+    }
+
+    public function joinJob()
+    {
+        return 'job.address_id = address.id';
     }
 }
