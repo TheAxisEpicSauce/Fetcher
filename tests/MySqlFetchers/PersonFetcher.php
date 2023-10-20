@@ -7,7 +7,7 @@ use Fetcher\MySqlFetcher;
 
 class PersonFetcher extends MySqlFetcher
 {
-    protected ?string $table = 'fetcher';
+    protected ?string $table = 'person';
 
     public function getFields(): array
     {

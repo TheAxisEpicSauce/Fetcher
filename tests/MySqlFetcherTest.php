@@ -10,6 +10,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Helpers\MysqlDbHelper;
 use Tests\MySqlFetchers\Geo\AddressFetcher;
 use Tests\MySqlFetchers\Passenger\PassengerFetcher;
+use Tests\MySqlFetchers\PersonFetcher;
 use Tests\MySqlFetchers\Reservation\Order\OrderFetcher;
 use Tests\MySqlFetchers\Reservation\ReservationFetcher;
 
@@ -35,98 +36,115 @@ class MySqlFetcherTest extends TestCase
         MysqlDbHelper::down();
     }
 
-//    public function testBuild()
-//    {
-//        $this->assertInstanceOf(
-//            PassengerFetcher::class,
-//            PassengerFetcher::build()
-//        );
-//    }
-//
-//    public function testValidWhere()
-//    {
-//        $this->assertInstanceOf(
-//            PassengerFetcher::class,
-//            PassengerFetcher::build()->where('id', 5)
-//        );
-//    }
-//
-//    public function testValidWhereIn()
-//    {
-//        $query = PassengerFetcher::build()->where('id', 'IN', [1, 2, 3])->toSql();
-//
-//        $this->assertEquals(
-//            'SELECT `passenger`.`id`, `passenger`.`first_name`, `passenger`.`last_name`, `passenger`.`age`, `passenger`.`address_id` FROM `passenger` WHERE `passenger`.`id` IN (?, ?, ?) GROUP BY `passenger`.`id`',
-//            $query
-//        );
-//
-//        $query = PassengerFetcher::build()->whereIdIn([1])->toSql();
-//
-//        $this->assertEquals(
-//            'SELECT `passenger`.`id`, `passenger`.`first_name`, `passenger`.`last_name`, `passenger`.`age`, `passenger`.`address_id` FROM `passenger` WHERE `passenger`.`id` IN (?) GROUP BY `passenger`.`id`',
-//            $query
-//        );
-//    }
-//
-//    public function testInvalidWhereValue()
-//    {
-//        $this->expectException(Exception::class);
-//
-//        PassengerFetcher::build()->where('id', "test");
-//    }
-//
-//    public function testInvalidWhereInValue()
-//    {
-//        $this->expectException(Exception::class);
-//
-//        PassengerFetcher::build()->where('id', 'IN', [1, 2, "three"]);
-//    }
-//
-//    public function testInvalidWhereField()
-//    {
-//        $this->expectException(Exception::class);
-//
-//        PassengerFetcher::build()->whereNonExistingField(5);
-//    }
-//
-//    public function testAndGroup()
-//    {
-//        $query = PassengerFetcher::build()->whereId(1)->whereFirstName('test')->toSql();
-//        $this->assertEquals(
-//            'SELECT `user`.`id`, `user`.`first_name`, `user`.`last_name`, `user`.`age`, `user`.`address_id` FROM `user` WHERE `user`.`id` = ? AND `user`.`first_name` = ? GROUP BY `user`.`id`',
-//            $query
-//        );
-//    }
-//
-//    public function testOrGroup()
-//    {
-//        $query = PassengerFetcher::buildOr()->whereId(1)->whereId(2)->toSql();
-//        $this->assertEquals(
-//            'SELECT `user`.`id`, `user`.`first_name`, `user`.`last_name`, `user`.`age`, `user`.`address_id` FROM `user` WHERE `user`.`id` = ? OR `user`.`id` = ? GROUP BY `user`.`id`',
-//            $query
-//        );
-//    }
-//
-//    public function testSelectAll()
-//    {
-//        $selectList = PassengerFetcher::build()->getSelect();
-//        $this->assertEquals([
-//            '`user`.`id`', '`user`.`first_name`', '`user`.`last_name`', '`user`.`age`', '`user`.`address_id`'
-//        ], $selectList);
-//
-//        $selectList = PassengerFetcher::build()->select(['user.*'])->getSelect();
-//        $this->assertEquals([
-//            '`user`.`id`', '`user`.`first_name`', '`user`.`last_name`', '`user`.`age`', '`user`.`address_id`'
-//        ], $selectList);
-//    }
-//
-//    public function testValidSelectAs()
-//    {
-//        $this->assertInstanceOf(
-//            MySqlFetcher::class,
-//            PassengerFetcher::build()->select(['first_name AS name'])
-//        );
-//    }
+    public function testBuild()
+    {
+        $this->assertInstanceOf(
+            PersonFetcher::class,
+            PersonFetcher::build()
+        );
+    }
+
+    public function testValidWhere()
+    {
+        $this->assertInstanceOf(
+            PersonFetcher::class,
+            PersonFetcher::build()->where('id', 5)
+        );
+    }
+
+    public function testValidWhereIn()
+    {
+        $query = PersonFetcher::build()->where('id', 'IN', [1, 2, 3])->toSql();
+
+        $this->assertEquals(
+            'SELECT `person`.`id`, `person`.`first_name`, `person`.`last_name`, `person`.`date_of_birth`, `person`.`address_id`, `person`.`job_id` FROM `person` WHERE `person`.`id` IN (?, ?, ?) GROUP BY `person`.`id`',
+            $query
+        );
+
+        $query = PersonFetcher::build()->whereIdIn([1])->toSql();
+
+        $this->assertEquals(
+            'SELECT `person`.`id`, `person`.`first_name`, `person`.`last_name`, `person`.`date_of_birth`, `person`.`address_id`, `person`.`job_id` FROM `person` WHERE `person`.`id` IN (?) GROUP BY `person`.`id`',
+            $query
+        );
+    }
+
+    public function testInvalidWhereValue()
+    {
+        $this->expectException(Exception::class);
+
+        PersonFetcher::build()->where('id', "test");
+    }
+
+    public function testInvalidWhereInValue()
+    {
+        $this->expectException(Exception::class);
+
+        PersonFetcher::build()->where('id', 'IN', [1, 2, "three"]);
+    }
+
+    public function testInvalidWhereField()
+    {
+        $this->expectException(Exception::class);
+
+        PersonFetcher::build()->where('non_existing_field', 5);
+
+        $this->expectException(Exception::class);
+
+        PersonFetcher::build()->whereNonExistingField(5);
+    }
+
+    public function testAndGroup()
+    {
+        $query = PersonFetcher::build()
+            ->where('id', 1)
+            ->where('first_name', 'test')
+            ->toSql();
+
+        $this->assertEquals(
+            'SELECT `person`.`id`, `person`.`first_name`, `person`.`last_name`, `person`.`date_of_birth`, `person`.`address_id`, `person`.`job_id` FROM `person` WHERE `person`.`id` = ? AND `person`.`first_name` = ? GROUP BY `person`.`id`',
+            $query
+        );
+    }
+
+    public function testOrGroup()
+    {
+        $query = PersonFetcher::buildOr()
+            ->where('id', 1)
+            ->where('id', 2)
+            ->toSql();
+
+        $this->assertEquals(
+            'SELECT `person`.`id`, `person`.`first_name`, `person`.`last_name`, `person`.`date_of_birth`, `person`.`address_id`, `person`.`job_id` FROM `person` WHERE `person`.`id` = ? OR `person`.`id` = ? GROUP BY `person`.`id`',
+            $query
+        );
+    }
+
+    public function testSelectAll()
+    {
+        $selectList = PersonFetcher::build()->getSelect();
+        $this->assertEquals([
+            '`person`.`id`', '`person`.`first_name`', '`person`.`last_name`', '`person`.`date_of_birth`', '`person`.`address_id`', '`person`.`job_id`'
+        ], $selectList);
+
+        $selectList = PersonFetcher::build()->select(['*'])->getSelect();
+        $this->assertEquals([
+            '`person`.`id`', '`person`.`first_name`', '`person`.`last_name`', '`person`.`date_of_birth`', '`person`.`address_id`', '`person`.`job_id`'
+        ], $selectList);
+
+        $selectList = PersonFetcher::build()->select(['person.*'])->getSelect();
+        $this->assertEquals([
+            '`person`.`id`', '`person`.`first_name`', '`person`.`last_name`', '`person`.`date_of_birth`', '`person`.`address_id`', '`person`.`job_id`'
+        ], $selectList);
+    }
+
+    public function testValidSelectAs()
+    {
+        $selectList = PersonFetcher::build()->select(['first_name AS name'])->getSelect();
+        $this->assertEquals([
+            '`person`.`first_name` AS name'
+        ], $selectList);
+    }
 //
 //    public function testInvalidSelectAs()
 //    {
@@ -182,30 +200,30 @@ class MySqlFetcherTest extends TestCase
 //        ], $query);
 //    }
 
-    public function testSubFetch()
-    {
-        $data = OrderFetcher::build()->sub('order_item', function (BaseFetcher $fetcher) {
-            $fetcher->select(['order_item.sales_price']);
-        }, 'get', 'items')
-            ->where('id', 1)
-            ->select(['id', 'sales_price'])->get();
-
-        $this->assertEquals(
-            [
-                [
-                    "id" => "1",
-                    'sales_price' => '4400.00',
-                    "items" => [
-                        ["sales_price" => "200.00"],
-                        ["sales_price" => "1200.00"],
-                        ["sales_price" => "200.00"],
-                        ["sales_price" => "300.00"],
-                        ["sales_price" => "500.00"],
-                        ["sales_price" => "2000.00"]
-                    ]
-                ]
-            ], $data);
-    }
+//    public function testSubFetch()
+//    {
+//        $data = OrderFetcher::build()->sub('order_item', function (BaseFetcher $fetcher) {
+//            $fetcher->select(['order_item.sales_price']);
+//        }, 'get', 'items')
+//            ->where('id', 1)
+//            ->select(['id', 'sales_price'])->get();
+//
+//        $this->assertEquals(
+//            [
+//                [
+//                    "id" => "1",
+//                    'sales_price' => '4400.00',
+//                    "items" => [
+//                        ["sales_price" => "200.00"],
+//                        ["sales_price" => "1200.00"],
+//                        ["sales_price" => "200.00"],
+//                        ["sales_price" => "300.00"],
+//                        ["sales_price" => "500.00"],
+//                        ["sales_price" => "2000.00"]
+//                    ]
+//                ]
+//            ], $data);
+//    }
 //
 //    public function testSubFetchArray()
 //    {
