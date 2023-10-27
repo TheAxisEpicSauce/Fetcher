@@ -15,16 +15,30 @@ class AddressFetcher extends MySqlFetcher
             'id' => FieldType::INT,
             'street' => FieldType::STRING,
             'number' => FieldType::STRING,
-            'postcode' => FieldType::STRING
+            'postcode' => FieldType::STRING,
+            'country_code' => FieldType::STRING,
+            'city_id' => FieldType::INT
         ];
     }
 
     public function getJoins(): array
     {
         return [
+            'country' => CountryFetcher::class,
+            'city' => CityFetcher::class,
             'person' => PersonFetcher::class,
-            'job' => JobFetcher::class
+            'job' => JobFetcher::class,
         ];
+    }
+
+    public function joinCountry()
+    {
+        return '`country`.`code` = `address`.`country_code`';
+    }
+
+    public function joinCity()
+    {
+        return '`city`.`id` = `address`.`city_id`';
     }
 
     public function joinPerson()

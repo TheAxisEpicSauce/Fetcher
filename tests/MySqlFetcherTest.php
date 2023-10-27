@@ -8,11 +8,9 @@ use Fetcher\FetcherCache;
 use Fetcher\MySqlFetcher;
 use PHPUnit\Framework\TestCase;
 use Tests\Helpers\MysqlDbHelper;
-use Tests\MySqlFetchers\Geo\AddressFetcher;
-use Tests\MySqlFetchers\Passenger\PassengerFetcher;
+use Tests\MySqlFetchers\AddressFetcher;
+use Tests\MySqlFetchers\JobFetcher;
 use Tests\MySqlFetchers\PersonFetcher;
-use Tests\MySqlFetchers\Reservation\Order\OrderFetcher;
-use Tests\MySqlFetchers\Reservation\ReservationFetcher;
 
 require __DIR__.'/../vendor/autoload.php';
 
@@ -140,65 +138,65 @@ class MySqlFetcherTest extends TestCase
 
     public function testValidSelectAs()
     {
-        $selectList = PersonFetcher::build()->select(['first_name AS name'])->getSelect();
+        $q = PersonFetcher::build()->select(['first_name AS name']);
+
+        $selectList = $q->getSelect();
         $this->assertEquals([
             '`person`.`first_name` AS name'
         ], $selectList);
     }
-//
-//    public function testInvalidSelectAs()
-//    {
-//        $this->expectException(Exception::class);
-//
-//        PassengerFetcher::build()->select(['firstname AS name']);
-//    }
-//
-//    public function testSelectJoin()
-//    {
-//        $query = PassengerFetcher::build()->select([
-//            'passenger.id',
-//            'passenger.first_name',
-//            'passenger.last_name',
-//            'passenger.gender',
-//            'passenger.date_of_birth',
-//            'passenger.email',
-//            'address.street',
-//            'address.number',
-//            'address.postcode',
-//        ])->toSql();
-//
-//        $this->assertEquals(
-//            'SELECT `passenger`.`id`, `passenger`.`first_name`, `passenger`.`last_name`, `passenger`.`gender`, `passenger`.`date_of_birth`, `passenger`.`email`, `address`.`street` AS address_street, `address`.`number` AS address_number, `address`.`postcode` AS address_postcode FROM `passenger` LEFT JOIN address ON passenger.address_id = address.id GROUP BY `passenger`.`id`',
-//            $query
-//        );
-//    }
-//
-//    public function testCount()
-//    {
-//        $count = AddressFetcher::build()->count();
-//
-//        $this->assertEquals(4, $count);
-//    }
 
-//    public function testSum()
-//    {
-//        $sum = ReservationFetcher::build()->sum('pax');
-//
-//        $this->assertEquals(10, $sum);
-//
-//        $sum = ReservationFetcher::build()->sum('reservation.pax');
-//
-//        $this->assertEquals(10, $sum);
-//    }
+    public function testInvalidSelectAs()
+    {
+        $this->expectException(Exception::class);
 
-//    public function testNotIn()
-//    {
-//        $query = AddressFetcher::whereIdNotIn([1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18])->get();
-//
-//        $this->assertEquals([
-//            ['id' => 4,  'street' => 'Ile du Nord', 'number' => '8888', 'name' => null, 'postcode' => '8888XX', 'country_code' => 'SC', 'city_id' => 9563]
-//        ], $query);
-//    }
+        PersonFetcher::build()->select(['voornaam AS name']);
+    }
+
+    public function testSelectJoin()
+    {
+        $query = PersonFetcher::build()->select([
+            'person.id',
+            'person.first_name',
+            'person.last_name',
+            'person.date_of_birth',
+            'address.street',
+            'address.number',
+            'address.postcode',
+        ])->toSql();
+
+        $this->assertEquals(
+            'SELECT `person`.`id`, `person`.`first_name`, `person`.`last_name`, `person`.`date_of_birth`, `address`.`street`, `address`.`number`, `address`.`postcode` FROM `person` LEFT JOIN address ON address.id = person.address_id GROUP BY `person`.`id`',
+            $query
+        );
+    }
+
+    public function testCount()
+    {
+        $count = AddressFetcher::build()->count();
+
+        $this->assertEquals(4, $count);
+    }
+
+    public function testSum()
+    {
+        $sum = JobFetcher::build()->sum('salary');
+
+        $this->assertEquals(2600, $sum);
+
+        $sum = JobFetcher::build()->sum('job.salary');
+
+        $this->assertEquals(2600, $sum);
+    }
+
+    public function testNotIn()
+    {
+        $query = AddressFetcher::whereIdNotIn([1, 2, 4])->get();
+
+        $this->assertEquals([
+            ['id' => 3,  'street' => 'Boeing Avenue', 'number' => '215', 'postcode' => '1119PD', 'country_code' => 'NL', 'city_id' => 2]
+        ], $query);
+    }
 
 //    public function testSubFetch()
 //    {

@@ -27,6 +27,8 @@ CREATE TABLE `address` (
   `street` varchar(255) DEFAULT NULL,
   `number` varchar(255) DEFAULT NULL,
   `postcode` varchar(255) DEFAULT NULL,
+  `country_code` varchar(255) DEFAULT NULL,
+  `city_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -37,8 +39,33 @@ CREATE TABLE `address` (
 
 LOCK TABLES `address` WRITE;
 /*!40000 ALTER TABLE `address` DISABLE KEYS */;
-INSERT INTO `address` VALUES (1,'Ommerbos','30','2134KD'),(2,'Burgemeester Pabstlaan','8-35','2131XE'),(3,'Boeing Avenue','215','1119PD'),(4,'Muiderbos','110','2134SV');
+INSERT INTO `address` VALUES (1,'Ommerbos','30','2134KD', 'NL', 1),(2,'Burgemeester Pabstlaan','8-35','2131XE', 'NL', 1),(3,'Boeing Avenue','215','1119PD', 'NL', 2),(4,'Muiderbos','110','2134SV', 'NL', 1);
 /*!40000 ALTER TABLE `address` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `city`
+--
+
+DROP TABLE IF EXISTS `city`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `city` (
+  `id` int(11) NOT NULL,
+  `country_code` varchar(255) DEFAULT NULL,
+  `name` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `city`
+--
+
+LOCK TABLES `city` WRITE;
+/*!40000 ALTER TABLE `city` DISABLE KEYS */;
+INSERT INTO `city` VALUES (1,'NL','Hoofddorp'),(2,'NL','Schiphol-Rijk');
+/*!40000 ALTER TABLE `city` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -117,6 +144,30 @@ INSERT INTO `company_person` VALUES (1,1),(2,3);
 UNLOCK TABLES;
 
 --
+-- Table structure for table `country`
+--
+
+DROP TABLE IF EXISTS `country`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `country` (
+  `code` varchar(255) NOT NULL,
+  `name` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `country`
+--
+
+LOCK TABLES `country` WRITE;
+/*!40000 ALTER TABLE `country` DISABLE KEYS */;
+INSERT INTO `country` VALUES ('NL','Nederland');
+/*!40000 ALTER TABLE `country` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `job`
 --
 
@@ -127,7 +178,7 @@ CREATE TABLE `job` (
   `id` int(11) NOT NULL,
   `job_type_id` int(11) DEFAULT NULL,
   `name` varchar(255) DEFAULT NULL,
-  `salary` decimal(8, 2) DEFAULT NULL,
+  `salary` decimal(8,2) DEFAULT NULL,
   `address_id` int(11) DEFAULT NULL,
   `company_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`)
@@ -140,7 +191,7 @@ CREATE TABLE `job` (
 
 LOCK TABLES `job` WRITE;
 /*!40000 ALTER TABLE `job` DISABLE KEYS */;
-INSERT INTO `job` VALUES (1,1,'Fuckup','2000',3,1),(2,2,'Vakkenvuller','600',4,2);
+INSERT INTO `job` VALUES (1,1,'Fuckup',2000.00,3,1),(2,2,'Vakkenvuller',600.00,4,2);
 /*!40000 ALTER TABLE `job` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -231,4 +282,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-03-31 14:45:04
+-- Dump completed on 2023-10-27 14:34:01
