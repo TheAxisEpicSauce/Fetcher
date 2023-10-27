@@ -23,7 +23,8 @@ class CompanyFetcher extends MySqlFetcher
     public function getJoins(): array
     {
         return [
-            'boss' => PersonFetcher::class
+            'boss' => PersonFetcher::class,
+            'person' => PersonFetcher::class,
         ];
     }
 
@@ -31,4 +32,5 @@ class CompanyFetcher extends MySqlFetcher
     {
         return 'person AS boss on boss.id = company.boss_id';
     }
+
 }

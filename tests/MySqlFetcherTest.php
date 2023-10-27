@@ -9,6 +9,7 @@ use Fetcher\MySqlFetcher;
 use PHPUnit\Framework\TestCase;
 use Tests\Helpers\MysqlDbHelper;
 use Tests\MySqlFetchers\AddressFetcher;
+use Tests\MySqlFetchers\CompanyFetcher;
 use Tests\MySqlFetchers\JobFetcher;
 use Tests\MySqlFetchers\PersonFetcher;
 
@@ -198,94 +199,102 @@ class MySqlFetcherTest extends TestCase
         ], $query);
     }
 
-//    public function testSubFetch()
-//    {
-//        $data = OrderFetcher::build()->sub('order_item', function (BaseFetcher $fetcher) {
-//            $fetcher->select(['order_item.sales_price']);
-//        }, 'get', 'items')
-//            ->where('id', 1)
-//            ->select(['id', 'sales_price'])->get();
-//
-//        $this->assertEquals(
-//            [
-//                [
-//                    "id" => "1",
-//                    'sales_price' => '4400.00',
-//                    "items" => [
-//                        ["sales_price" => "200.00"],
-//                        ["sales_price" => "1200.00"],
-//                        ["sales_price" => "200.00"],
-//                        ["sales_price" => "300.00"],
-//                        ["sales_price" => "500.00"],
-//                        ["sales_price" => "2000.00"]
-//                    ]
-//                ]
-//            ], $data);
-//    }
-//
-//    public function testSubFetchArray()
-//    {
-//        $data = PassengerFetcher::buildFromArray([
-//            'type' => 'and',
-//            'fields' => [[
-//                'table' => 'note',
-//                'as' => 'notes',
-//                'sub' => [
-//                    'type' => 'and',
-//                    'fields' => [],
-//                    'select' => ['note.content'],
-//
-//                ],
-//                'method' => 'get'
-//            ]],
-//            'select' => ['id', 'first_name', 'last_name']
-//        ])->get();
-//
-//        $this->assertEquals(
-//            [
-//                [
-//                    "id" => "1",
-//                    "first_name" => "raphael",
-//                    "last_name" => "pelissier",
-//                    "notes" => [
-//                        ["content" => "note 1 of raphael"],
-//                        ["content" => "note 2 of raphael"],
-//                        ["content" => "note 3 of raphael"],
-//                        ["content" => "note 4 of raphael"]
-//                    ]
-//                ], [
-//                    "id" => "2",
-//                    "first_name" => "bruce",
-//                    "last_name" => "pelissier",
-//                    "notes" => [
-//                        ["content" => "note 1 of bruce"]
-//                    ]
-//                ], [
-//                    "id" => "3",
-//                    "first_name" => "george",
-//                    "last_name" => "pelissier",
-//                    "notes" => [
-//                        ["content" => "note 1 of george"],
-//                        ["content" => "note 2 of george"]
-//                    ]
-//                ], [
-//                    "id" => "4",
-//                    "first_name" => "john",
-//                    "last_name" => "doe",
-//                    "notes" => []
-//                ]
-//            ], $data
-//        );
-//    }
-//
-//    public function testSubFetchSameTwice()
-//    {
-//        $data = PassengerFetcher::build()->sub('note', function (BaseFetcher $fetcher) {
-//            $fetcher->select(['note.content']);
-//        }, 'get', 'notes_a')->sub('note', function (BaseFetcher $fetcher) {
-//            $fetcher->select(['note.content']);
-//        }, 'get', 'notes_b')->select(['id'])->get();
-//    }
+    public function testSubFetch()
+    {
+        $data = JobFetcher::build()
+            ->sub('person', function (BaseFetcher $fetcher) {
+                $fetcher->select(['person.first_name']);
+            }, 'get', 'employees')
+            ->where('id', 2)
+            ->select(['id', 'name'])->get();
+
+        $this->assertEquals(
+            [
+                [
+                    "id" => "2",
+                    "name" => "Vakkenvuller",
+                    "employees" => [
+                        ["first_name" => "Bruce"],
+                        ["first_name" => "George"]
+                    ]
+                ]
+            ], $data);
+    }
+
+    public function testSubFetchArray()
+    {
+        $data = JobFetcher::buildFromArray([
+            'type' => 'and',
+            'fields' => [[
+                'table' => 'person',
+                'as' => 'employees',
+                'sub' => [
+                    'type' => 'and',
+                    'fields' => [],
+                    'select' => ['first_name'],
+
+                ],
+                'method' => 'get'
+            ]],
+            'select' => ['id', 'name']
+        ])->get();
+
+        $this->assertEquals(
+            [
+                [
+                    "id" => "1",
+                    "name" => "Software engineer",
+                    "employees" => [
+                        ["first_name" => "Raphael"],
+                    ]
+                ], [
+                    "id" => "2",
+                    "name" => "Vakkenvuller",
+                    "employees" => [
+                        ["first_name" => "Bruce"],
+                        ["first_name" => "George"]
+                    ]
+                ]
+            ], $data
+        );
+    }
+
+    public function testSubFetchSameTwice()
+    {
+        $data = JobFetcher::build()
+            ->sub('person', function (BaseFetcher $fetcher) {
+                $fetcher->select(['first_name']);
+            }, 'get', 'employees_a')
+            ->sub('person', function (BaseFetcher $fetcher) {
+                $fetcher->select(['last_name']);
+            }, 'get', 'employees_b')->select(['id', 'name'])->get();
+
+        $this->assertEquals(
+            [
+                [
+                    "id" => "1",
+                    "name" => "Software engineer",
+                    "employees_a" => [
+                        ["first_name" => "Raphael"],
+                    ],
+                    "employees_b" => [
+                        ["last_name" => "Pelissier"],
+                    ]
+                ], [
+                    "id" => "2",
+                    "name" => "Vakkenvuller",
+                    "employees_a" => [
+                        ["first_name" => "Bruce"],
+                        ["first_name" => "George"]
+                    ],
+                    "employees_b" => [
+                        ["last_name" => "Pelissier"],
+                        ["last_name" => "Pelissier"]
+                    ]
+                ]
+            ], $data
+        );
+    }
 }
 
 

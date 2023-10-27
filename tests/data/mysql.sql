@@ -139,7 +139,7 @@ CREATE TABLE `company_person` (
 
 LOCK TABLES `company_person` WRITE;
 /*!40000 ALTER TABLE `company_person` DISABLE KEYS */;
-INSERT INTO `company_person` VALUES (1,1),(2,3);
+INSERT INTO `company_person` VALUES (1,1),(2,2),(2,3);
 /*!40000 ALTER TABLE `company_person` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -191,7 +191,7 @@ CREATE TABLE `job` (
 
 LOCK TABLES `job` WRITE;
 /*!40000 ALTER TABLE `job` DISABLE KEYS */;
-INSERT INTO `job` VALUES (1,1,'Fuckup',2000.00,3,1),(2,2,'Vakkenvuller',600.00,4,2);
+INSERT INTO `job` VALUES (1,1,'Software engineer',2000.00,3,1),(2,2,'Vakkenvuller',600.00,4,2);
 /*!40000 ALTER TABLE `job` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -233,7 +233,7 @@ CREATE TABLE `person` (
   `last_name` varchar(255) DEFAULT NULL,
   `date_of_birth` date DEFAULT NULL,
   `address_id` varchar(255) DEFAULT NULL,
-  `job_id` varchar(255) DEFAULT NULL,
+  `job_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -244,7 +244,7 @@ CREATE TABLE `person` (
 
 LOCK TABLES `person` WRITE;
 /*!40000 ALTER TABLE `person` DISABLE KEYS */;
-INSERT INTO `person` VALUES (1,'Raphael','Pelissier','1997-04-30','2','1'),(2,'Bruce','Pelissier','2001-06-25','1',NULL),(3,'George','Pelissier','2005-05-04','1','2');
+INSERT INTO `person` VALUES (1,'Raphael','Pelissier','1997-04-30','2',1),(2,'Bruce','Pelissier','2001-06-25','1',2),(3,'George','Pelissier','2005-05-04','1',2);
 /*!40000 ALTER TABLE `person` ENABLE KEYS */;
 UNLOCK TABLES;
 

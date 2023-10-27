@@ -247,8 +247,11 @@ abstract class BaseFetcher implements Fetcher
     public function sub(string $table, Closure $closure, ?string $method, ?string $as): static
     {
         $join = $this->findJoin([$table]);
+
         $fetcherClass = $join->getFetcherClass();
-        $fetcher = ($fetcherClass)::buildAnd();
+
+
+        $fetcher = $fetcherClass::buildAnd();
         $reverseJoin = $fetcher->findJoin([$this->table]);
         $closure($fetcher);
         $this->fieldGroup->addField(new SubFetchField($fetcher, $reverseJoin, $table, $method, null, $as));
@@ -392,7 +395,7 @@ abstract class BaseFetcher implements Fetcher
     public static function buildFromArray(array $data): static
     {
         $fetcher = new static();
-        $fetcher->mapFetchers(get_class($fetcher), $fetcher->table);
+//        $fetcher->mapFetchers(get_class($fetcher), $fetcher->table);
 
         $fetcher->reset();
 
