@@ -173,8 +173,7 @@ abstract class BaseFetcher implements Fetcher
     private function joinIdList(int $fromId, int $toId): ?string
     {
         $graph = new Graph(FetcherCache::Instance()->getGraph());
-        return $graph->breadthFirstSearch($fromId, $toId);;
-        return null;
+        return $graph->breadthFirstSearch($fromId, $toId);
     }
 
     private function getTableId($table): int
@@ -303,6 +302,9 @@ abstract class BaseFetcher implements Fetcher
 
     private function findJoin(array $tablePath): ?Join
     {
+        dump('table path');
+        dump($tablePath);
+
         $pathEnd = $tableAs = $table = array_pop($tablePath);
         if (array_key_exists($table, self::$joinsAs)) $table = $pathEnd = self::$joinsAs[$table]['table'];
 
@@ -329,17 +331,30 @@ abstract class BaseFetcher implements Fetcher
 
             $toId = FetcherCache::Instance()->getTableId($tableTo);
 
-            $list = $this->joinIdList($fromId, $toId);
+
+            $path = $this->joinIdList($fromId, $toId);
+            if ($list)
+            {
+                $path = explode('->', $path);
+                array_shift($path);
+                $path = implode('->', $path);
+                $list = $list.'->'.$path;
+            }
+            else
+            {
+                $list = $path;
+            }
+
             $fromId = $toId;
 
         } while (!$pathTraveled);
 
-        $list = array_reverse(explode('->', $list));
+        $traveledIds = array_reverse(explode('->', $list));
 
         $tableTo = FetcherCache::Instance()->getTable($toId);
         $join = new Join(FetcherCache::Instance()->getFetcher($toId));
 
-        foreach ($list as $id) {
+        foreach ($traveledIds as $id) {
             $id = (int) $id;
             if ($id === $toId) continue;
             $join->addLink(FetcherCache::Instance()->getTable($id), $tableTo, $this->joinType($id, $toId));
@@ -349,7 +364,9 @@ abstract class BaseFetcher implements Fetcher
         foreach ($tableMappings as $a => $b) {
             $join->addTableMapping($b, $a);
         }
-        $join->addTableMapping($table, $tableAs);
+        $join->addTableMapping($table, str_replace('.', '_', $join->getPath()));
+        dump('join found');
+        dump($join);
 
         return $join;
     }
@@ -521,11 +538,20 @@ abstract class BaseFetcher implements Fetcher
 
     abstract protected function executeQuery(): array;
 
+    public function dumpInfo()
+    {
+        return [
+            'joins' => $this->joinsToMake,
+            'select' => $this->select
+        ];
+    }
+    
     public function get(): array
     {
         $this->buildQuery();
 
         $rows = $this->executeQuery();
+        dd($rows);
         if (count($this->groupedFields) > 0) {
             foreach ($rows as $index => $row) {
                 foreach ($this->groupedFields as $groupField)
@@ -699,10 +725,10 @@ abstract class BaseFetcher implements Fetcher
             }
 
             if ($join !== null) {
-                if (array_key_exists($join->pathEndAs(), $this->joinsToMake)) {
+                if (array_key_exists($join->getPath(), $this->joinsToMake)) {
 //                    $this->joinsToMake[$join->pathEndAs()]->setFullJoin();
                 } else {
-                    $this->joinsToMake[$join->pathEndAs()] = $join;
+                    $this->joinsToMake[$join->getPath()] = $join;
                 }
             }
         }

@@ -23,8 +23,7 @@ class CompanyFetcher extends MySqlFetcher
     public function getJoins(): array
     {
         return [
-            'boss' => PersonFetcher::class,
-            'person' => PersonFetcher::class,
+            'boss' => PersonFetcher::class
         ];
     }
 

@@ -132,6 +132,7 @@ abstract class MySqlFetcher extends BaseFetcher
                 $joinMethod = 'join'.$this->studly($tableTo);
 
                 $tableAs = $joinToMake->getTableAs($tableTo);
+
                 $fetcherTo = $currentFetcher->getJoins()[$tableTo];
 
                 if (!array_key_exists($tableFrom, $joinsMade) || !in_array($tableAs, $joinsMade[$tableFrom])) {
