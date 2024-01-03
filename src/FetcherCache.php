@@ -152,15 +152,14 @@ class FetcherCache
             }
 
             $file = str_replace(
-                ['/', '.php'],
-                ['\\', ''],
+                [self::$FetcherDir, '/', '.php'],
+                [self::$Namespace, '\\', ''],
                 $file
             );
 
             $file = implode('\\', array_map(fn($a) => ucfirst($a), explode('\\', $file)));
-            $classPath = str_replace(self::$FetcherDir, self::$Namespace, $file);
 
-            if (is_subclass_of($classPath, BaseFetcher::class)) {
+            if (is_subclass_of($file, BaseFetcher::class)) {
                 $fetchers[] = $file;
             }
         }
