@@ -626,15 +626,15 @@ abstract class BaseFetcher implements Fetcher
         $fieldParts = explode('.', $fullField);
         $columnPart = array_pop($fieldParts);
 
-        $prefixRegex = '/( |^)(is_|\$_|\$_is_)([a-z_]+?)( |$)/';
+//        $prefixRegex = '/( |^)(\$_|\$_is_)([a-z_]+?)( |$)/';
         $suffixRegex = '/( |^)([a-z_]+?)(_is|_is_not|_gt|_gte|_lt|_lte|_\$|_is_\$|_is_not_\$|_gt_\$|_gte_\$|_lt_\$|_lte_\$|_like|_not_in|_in|_in_like)( |$)/';
 
-        if (preg_match($prefixRegex, $columnPart, $matches))
-        {
-            $fieldParts[] = $matches[3];
-            $operator = $this->fieldPrefixes[$matches[2]];
-        }
-        elseif (preg_match($suffixRegex, $columnPart, $matches))
+//        if (preg_match($prefixRegex, $columnPart, $matches))
+//        {
+//            $fieldParts[] = $matches[3];
+//            $operator = $this->fieldPrefixes[$matches[2]];
+//        }
+        if (preg_match($suffixRegex, $columnPart, $matches))
         {
             $fieldParts[] = $matches[2];
             $operator = $this->fieldSuffixes[$matches[3]];
