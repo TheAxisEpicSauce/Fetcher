@@ -127,7 +127,6 @@ abstract class MySqlFetcher extends BaseFetcher
             $this->tableFetcherLookup[$tableFrom] = $this;
 
             $tablesAs = [];
-
             foreach ($joinToMake->getTables() as $tableTo) {
                 $joinMethod = 'join'.$this->studly($tableTo);
 
@@ -177,6 +176,9 @@ abstract class MySqlFetcher extends BaseFetcher
                             $j = preg_replace(sprintf('/(\.)(%s)(\.)/', $tableA), '.'.$tableB.'.', $j);
                             $j = preg_replace(sprintf('/(^)(%s)(\.)/', $tableA), $tableB.'.', $j);
                             $j = preg_replace(sprintf('/( )(%s)(\.)/', $tableA), ' '.$tableB.'.', $j);
+                            $j = preg_replace(sprintf('/(\.`)(%s)(`\.)/', $tableA), '.`'.$tableB.'`.', $j);
+                            $j = preg_replace(sprintf('/(^`)(%s)(`\.)/', $tableA), '`'.$tableB.'`.', $j);
+                            $j = preg_replace(sprintf('/( `)(%s)(`\.)/', $tableA), ' `'.$tableB.'`.', $j);
                         }
 
                         $joinString .= sprintf(' %s %s ON %s', $type, $as, $j);
@@ -197,26 +199,36 @@ abstract class MySqlFetcher extends BaseFetcher
         $fieldToStringClosure = function (Field $field) use (&$fieldToStringClosure, &$values) {
             if ($field instanceof ObjectField) {
                 $join = $field->getJoin();
-                if ($join !== null){
+                if ($join !== null) {
                     $table = $join->pathEndAs();
                 } else {
                     $table = $this::getTable();
                 }
 
-                if (is_array($field->getValue())) {
-                    $marks = [];
-                    foreach ($field->getValue() as $v) {$values[] = $v; $marks[] = '?';}
-                    $marks = '('.implode(', ', $marks).')';
-                } elseif ($field->getOperator() === Operator::EQUALS && $field->getValue() === null) {
-                    return sprintf('`%s`.`%s` %s', $table, $field->getField(), 'IS NULL');
-                } elseif ($field->getOperator() === Operator::NOT_EQUALS && $field->getValue() === null) {
-                    return sprintf('`%s`.`%s` %s', $table, $field->getField(), 'IS NOT NULL');
-                } else {
-                    $values[] = $field->getValue();
-                    $marks = '?';
-                }
+                if (Operator::IsFieldOperator($field->getOperator()))
+                {
+                    $valueTable = $field->getJoin()?$field->getJoin()->pathEndAs():$this::getTable();
 
-                return sprintf('`%s`.`%s` %s %s', $table, $field->getField(), $field->getOperator(), $marks);
+                    $simpleOperator = str_replace('$', '', $field->getOperator());
+                    return sprintf('`%s`.`%s` %s `%s`.`%s`', $table, $field->getField(), $simpleOperator, $valueTable, $field->getValue());
+                }
+                else
+                {
+                    if (is_array($field->getValue())) {
+                        $marks = [];
+                        foreach ($field->getValue() as $v) {$values[] = $v; $marks[] = '?';}
+                        $marks = '('.implode(', ', $marks).')';
+                    } elseif ($field->getOperator() === Operator::EQUALS && $field->getValue() === null) {
+                        return sprintf('`%s`.`%s` %s', $table, $field->getField(), 'IS NULL');
+                    } elseif ($field->getOperator() === Operator::NOT_EQUALS && $field->getValue() === null) {
+                        return sprintf('`%s`.`%s` %s', $table, $field->getField(), 'IS NOT NULL');
+                    } else {
+                        $values[] = $field->getValue();
+                        $marks = '?';
+                    }
+
+                    return sprintf('`%s`.`%s` %s %s', $table, $field->getField(), $field->getOperator(), $marks);
+                }
             } elseif ($field instanceof GroupField) {
                 $fields = [];
                 foreach ($field->getFields() as $f) {

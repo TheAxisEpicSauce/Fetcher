@@ -13,25 +13,27 @@ class Join
     /**
      * @var string
      */
-    private $path;
+    private string $path;
     /**
      * @var string
      */
-    private $fetcherClass;
+    private string $fetcherClass;
     /**
      * @var string
      */
-    private $type;
+    private string $type;
     /**
      * @var array
      */
-    private $tableMapping = [];
+    private array $tableMapping = [];
 
     /**
      * @var JoinLink[]
      */
-    private $links;
+    private array $links;
 
+
+    private ?string $valueType = null;
 
     public function __construct(string $fetcherClass, string $type = 'left')
     {
@@ -139,6 +141,16 @@ class Join
         if (array_key_exists($table, $this->tableMapping)) return $this->tableMapping[$table];
         return $table;
     }
+
+    public function getValueType(): ?string
+    {
+        return $this->valueType;
+    }
+
+    public function setValueType(?string $valueType): void
+    {
+        $this->valueType = $valueType;
+    }
 }
 
 class JoinLink
@@ -172,6 +184,8 @@ class JoinLink
     {
         return $this->type;
     }
+
+
 }
 
 

@@ -12,20 +12,14 @@ use Fetcher\Join\Join;
 
 class ObjectField implements Field
 {
-    private $field;
-    private $type;
-    private $operator;
-    private $value;
-    private $join;
+    private string $field;
+    private string $type;
+    private string $operator;
+    private mixed $value;
+    private ?Join $join = null;
+    private ?Join $valueJoin = null;
 
-    /**
-     * FieldObject constructor.
-     * @param $field
-     * @param $type
-     * @param $operator
-     * @param $value
-     */
-    public function __construct(string $field, string $type, string $operator, $value = null)
+    public function __construct(string $field, string $type, string $operator, mixed $value)
     {
         FieldType::validateValue($type, 2);
         $this->field = $field;
@@ -34,59 +28,48 @@ class ObjectField implements Field
         $this->value = $value;
     }
 
-    /**
-     * @return string
-     */
     public function getField(): string
     {
         return $this->field;
     }
 
-    /**
-     * @return string
-     */
     public function getType(): string
     {
         return $this->type;
     }
 
-    /**
-     * @return string
-     */
     public function getOperator(): string
     {
         return $this->operator;
     }
 
-    /**
-     * @return mixed
-     */
-    public function getValue()
+    public function getValue(): mixed
     {
         return $this->value;
     }
 
-    /**
-     * @param null $value
-     */
     public function setValue($value): void
     {
         $this->value = $value;
     }
 
-    /**
-     * @return mixed
-     */
     public function getJoin(): ?Join
     {
         return $this->join;
     }
 
-    /**
-     * @param mixed $join
-     */
     public function setJoin(Join $join): void
     {
         $this->join = $join;
+    }
+
+    public function getValueJoin(): ?Join
+    {
+        return $this->valueJoin;
+    }
+
+    public function setValueJoin(?Join $valueJoin): void
+    {
+        $this->valueJoin = $valueJoin;
     }
 }

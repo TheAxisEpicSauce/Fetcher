@@ -15,7 +15,9 @@ class FetcherCache
 
     private array $fieldPrefixes = [
         '' => Operator::EQUALS,
-        'is_' => Operator::EQUALS
+        'is_' => Operator::EQUALS,
+        '$_' =>  Operator::EQUALS_FIELD,
+        '$_is' =>  Operator::EQUALS_FIELD,
     ];
 
     private array $fieldSuffixes = [
@@ -26,6 +28,13 @@ class FetcherCache
         '_gte' =>  Operator::GREATER_OR_EQUAL,
         '_lt' =>  Operator::LESS,
         '_lte' =>  Operator::LESS_OR_EQUAL,
+        '_$' =>  Operator::EQUALS_FIELD,
+        '_is_$' =>  Operator::EQUALS_FIELD,
+        '_is_not_$' =>  Operator::NOT_EQUALS_FIELD,
+        '_gt_$' =>  Operator::GREATER_FIELD,
+        '_gte_$' =>  Operator::GREATER_OR_EQUAL_FIELD,
+        '_lt_$' =>  Operator::LESS_FIELD,
+        '_lte_$' =>  Operator::LESS_OR_EQUAL_FIELD,
         '_like' =>  Operator::LIKE,
         '_in' =>  Operator::IN,
         '_in_like' =>  Operator::IN_LIKE,

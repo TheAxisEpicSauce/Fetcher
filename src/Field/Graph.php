@@ -16,7 +16,8 @@ class Graph
 
     // find least number of hops (edges) between 2 nodes
     // (vertices)
-    public function breadthFirstSearch($origin, $destination) {
+    public function breadthFirstSearch($origin, $destination): ?array
+    {
         // mark all nodes as unvisited
         foreach ($this->graph as $vertex => $adj) {
             $this->visited[$vertex] = false;
@@ -60,17 +61,17 @@ class Graph
         }
 
         if (isset($path[$destination])) {
-            $list = '';
+            $idPath = [];
 
-            $sep = '';
             foreach ($path[$destination] as $vertex) {
-                $list .= $sep.$vertex;
-                $sep = '->';
+                $idPath[] =$vertex;
             }
-            return $list;
+            return $idPath;
         }
         else {
             return null;
         }
     }
+
+
 }
