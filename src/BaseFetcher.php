@@ -595,6 +595,7 @@ abstract class BaseFetcher implements Fetcher
             {
                 $valueJoin = $this->handleJoin($valueTablePath, $valueField);
                 if ($valueJoin === null) return null;
+                $value = $valueField;
             }
             elseif (!$this->hasField($valueField))
             {

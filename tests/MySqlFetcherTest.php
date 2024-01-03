@@ -501,6 +501,19 @@ class MySqlFetcherTest extends TestCase
             ],
         ], $data);
     }
+
+    public function testColumnCompare()
+    {
+        $q = PersonFetcher::build()
+            ->where('address_id', '$=', 'job.address_id')
+            ->select(['person.*', 'job.*']);
+
+        dump($q->toSql());
+
+        $data = $q->get();
+
+        dd($data);
+    }
 }
 
 

@@ -34,7 +34,15 @@ class FieldObjectValidator
             }
             foreach ($fieldObject->getValue() as $value)
                 $this->validateFromType($fieldObject->getType(), $value);
-        } else{
+        }
+        elseif (Operator::IsFieldOperator($fieldObject->getOperator()))
+        {
+            if (!is_string($fieldObject->getValue())) {
+                throw new Exception(sprintf('value of %s should be of type string', $this->object->getField()));
+            }
+        }
+        else
+        {
             $this->validateFromType($fieldObject->getType(), $fieldObject->getValue());
         }
     }

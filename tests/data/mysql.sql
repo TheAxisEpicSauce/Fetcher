@@ -39,7 +39,7 @@ CREATE TABLE `address` (
 
 LOCK TABLES `address` WRITE;
 /*!40000 ALTER TABLE `address` DISABLE KEYS */;
-INSERT INTO `address` VALUES (1,'Ommerbos','30','2134KD', 'NL', 1),(2,'Burgemeester Pabstlaan','8-35','2131XE', 'NL', 1),(3,'Boeing Avenue','215','1119PD', 'NL', 2),(4,'Muiderbos','110','2134SV', 'NL', 1);
+INSERT INTO `address` VALUES (1,'Ommerbos','30','2134KD','NL',1),(2,'Burgemeester Pabstlaan','8-35','2131XE','NL',1),(3,'Boeing Avenue','215','1119PD','NL',2),(4,'Muiderbos','110','2134SV','NL',1);
 /*!40000 ALTER TABLE `address` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -244,7 +244,7 @@ CREATE TABLE `person` (
 
 LOCK TABLES `person` WRITE;
 /*!40000 ALTER TABLE `person` DISABLE KEYS */;
-INSERT INTO `person` VALUES (1,'Raphael','Pelissier','1997-04-30','2',1),(2,'Bruce','Pelissier','2001-06-25','1',2),(3,'George','Pelissier','2005-05-04','1',2);
+INSERT INTO `person` VALUES (1,'Raphael','Pelissier','1997-04-30','2',1),(2,'Bruce','Pelissier','2001-06-25','1',2),(3,'George','Pelissier','2005-05-04','1',2),(4,'Roy','KArte','1997-04-30','3',1);
 /*!40000 ALTER TABLE `person` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -282,4 +282,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-10-27 14:34:01
+-- Dump completed on 2024-01-03 14:24:24

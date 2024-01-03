@@ -207,7 +207,7 @@ abstract class MySqlFetcher extends BaseFetcher
 
                 if (Operator::IsFieldOperator($field->getOperator()))
                 {
-                    $valueTable = $field->getJoin()?$field->getJoin()->pathEndAs():$this::getTable();
+                    $valueTable = $field->getValueJoin()?$field->getValueJoin()->pathEndAs():$this::getTable();
 
                     $simpleOperator = str_replace('$', '', $field->getOperator());
                     return sprintf('`%s`.`%s` %s `%s`.`%s`', $table, $field->getField(), $simpleOperator, $valueTable, $field->getValue());
