@@ -632,6 +632,7 @@ abstract class BaseFetcher implements Fetcher
         }
         else
         {
+            $fieldParts[] = $columnPart;
             $operator = '=';
         }
 
