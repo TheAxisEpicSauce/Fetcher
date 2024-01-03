@@ -14,26 +14,28 @@ class FetcherCacheTest extends TestCase
     {
         $this->expectNotToPerformAssertions();
 
-        FetcherCache::Setup('tests/cache', 'tests/MySqlFetchers', 'Tests\\');
+        FetcherCache::Setup('tests/cache', 'tests/MySqlFetchers', 'Tests\\MySqlFetchers');
     }
 
     public function testInvalidCacheDirSetup()
     {
         $this->expectException(Exception::class);
 
-        FetcherCache::Setup('tests/error-folder', 'tests/MySqlFetchers', 'Tests\\');
+        FetcherCache::Setup('tests/error-folder', 'tests/MySqlFetchers', 'Tests\\MySqlFetchers');
     }
 
     public function testInvalidFetcherDirSetup()
     {
         $this->expectException(Exception::class);
 
-        FetcherCache::Setup('tests/cache', 'tests/Fetchers', 'Tests\\');
+        FetcherCache::Setup('tests/cache', 'tests/Fetchers', 'Tests\\MySqlFetchers');
     }
 
     public function testFetcherCache()
     {
         $this->expectNotToPerformAssertions();
+
+        FetcherCache::Setup('tests/cache', 'tests/MySqlFetchers', 'Tests\\MySqlFetchers');
 
         FetcherCache::Instance()->cacheFetchers();
     }

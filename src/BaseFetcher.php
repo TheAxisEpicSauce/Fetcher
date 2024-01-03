@@ -381,7 +381,14 @@ abstract class BaseFetcher implements Fetcher
             }
 
             $toId = FetcherCache::Instance()->getTableId($tableTo);
-
+            if ($toId === null)
+            {
+                $toId = FetcherCache::Instance()->getTableId($tableTo, $fromId);
+                if ($toId !== null)
+                {
+                    $tableMappings[$tableTo] = FetcherCache::Instance()->getTable($toId);
+                }
+            }
 
             $idPath = $this->getIdPath($fromId, $toId);
             if ($fullIdPath)
@@ -418,6 +425,8 @@ abstract class BaseFetcher implements Fetcher
         $passedTablePath = null;
         foreach ($originalTablePath as $tableInPath)
         {
+            $tableInPath = $join->getTableAs($tableInPath);
+
             if ($passedTablePath === null) {
                 $passedTablePath = $tableInPath;
                 continue;
@@ -815,12 +824,17 @@ abstract class BaseFetcher implements Fetcher
             }
 
             $join = null;
-            if ($table === $this->table) {
+            if ($table === $this->table)
+            {
                 $fields = array_keys($this->getFields());
-            } elseif ($join = $this->findJoin($tables)) {
+            }
+            elseif ($join = $this->findJoin($tables))
+            {
                 $class = $join->getFetcherClass();
                 $fields = array_keys((new $class)->getFields());
-            } else {
+            }
+            else
+            {
                 throw new Exception('Could not find table '. $table);
             }
 
@@ -845,9 +859,11 @@ abstract class BaseFetcher implements Fetcher
             }
 
 
-            if ($join !== null) {
-                if (!array_key_exists($join->getPath(), $this->joinsToMake)) {
-                    $this->joinsToMake[$join->getPath()] = $join;
+            if ($join !== null)
+            {
+                if (!array_key_exists($join->getPathAs(), $this->joinsToMake))
+                {
+                    $this->joinsToMake[$join->getPathAs()] = $join;
                 }
             }
         }

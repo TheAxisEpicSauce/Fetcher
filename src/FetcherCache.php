@@ -100,7 +100,6 @@ class FetcherCache
 
         $graph = [];
 
-        $highestTableId = 0;
         foreach ($fetcherClasses as $index => $fetcherClass) {
             /** @var BaseFetcher $fetcher */
             $fetcher = $objects[$index] = new $fetcherClass();
@@ -113,7 +112,6 @@ class FetcherCache
 
             $tables[$index] = $table;
             $tableIds[$table] = $index;
-            $highestTableId = $index;
         }
 
 
@@ -122,13 +120,6 @@ class FetcherCache
             $graph[$index] = [];
             foreach ($joins as $join => $class) {
                 $graph[$index][$join] = $fetcherIds[$class];
-
-                if (!array_key_exists($join, $tableIds))
-                {
-                    $highestTableId++;
-                    $tables[$highestTableId] = $join;
-                    $tableIds[$join] = $highestTableId;
-                }
             }
 
             $prefixes[$index] = '/( |^)('.implode("|", array_keys($this->fieldPrefixes)).')('.implode("|", array_keys($object->getFields())).')( |$)/';
@@ -160,7 +151,6 @@ class FetcherCache
                 $this->scanDir($file, $fetchers);
                 continue;
             }
-
             $file = str_replace(
                 [self::$FetcherDir, '/', '.php'],
                 [self::$Namespace, '\\', ''],
@@ -168,7 +158,6 @@ class FetcherCache
             );
 
             $file = implode('\\', array_map(fn($a) => ucfirst($a), explode('\\', $file)));
-
             if (is_subclass_of($file, BaseFetcher::class)) {
                 $fetchers[] = $file;
             }
@@ -213,8 +202,14 @@ class FetcherCache
         return self::$cache['table_ids'];
     }
 
-    public function getTableId(string $table)
+    public function getTableId(string $table, ?int $fromId = null)
     {
+        if ($fromId)
+        {
+            if (!array_key_exists($table, self::$cache['graph'][$fromId])) return null;
+            return self::$cache['graph'][$fromId][$table];
+        }
+        if (!array_key_exists($table, self::$cache['table_ids'])) return null;
         return self::$cache['table_ids'][$table];
     }
 

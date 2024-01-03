@@ -10,26 +10,10 @@ namespace Fetcher\Join;
 
 class Join
 {
-    /**
-     * @var string
-     */
     private string $path;
-    /**
-     * @var string
-     */
     private string $fetcherClass;
-    /**
-     * @var string
-     */
     private string $type;
-    /**
-     * @var array
-     */
     private array $tableMapping = [];
-
-    /**
-     * @var JoinLink[]
-     */
     private array $links;
 
 
@@ -61,12 +45,12 @@ class Join
         if ($link === null) return;
 
         $path = $link->getTableTo();
-        if ($link->next !== null) {
-            do {
-                $link = $link->next;
-                $path.='.'.$link->getTableTo();
-            } while ($link->next !== null);
-        }
+
+        while ($link->next !== null){
+            $link = $link->next;
+            $path.='.'.$link->getTableTo();
+        };
+
         $this->path = $path;
     }
 
@@ -76,6 +60,16 @@ class Join
     public function getPath(): string
     {
         return $this->path;
+    }
+
+    public function getPathAs(): string
+    {
+        $pathParts = explode('.', $this->path);
+        $pathAsParts = [];
+        foreach ($pathParts as $pathPart)
+            $pathAsParts[] = $this->getTableAs($pathPart);
+
+        return implode('.', $pathAsParts);
     }
 
     public function pathEnd()

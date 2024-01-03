@@ -26,6 +26,7 @@ class PersonFetcher extends MySqlFetcher
         return [
             'relation' => RelationFetcher::class,
             'address' => AddressFetcher::class,
+            'address_double' => AddressFetcher::class,
             'job' => JobFetcher::class,
             'company' => CompanyFetcher::class,
             'owned_company' => CompanyFetcher::class
@@ -40,6 +41,11 @@ class PersonFetcher extends MySqlFetcher
     public function joinAddress()
     {
         return 'address.id = person.address_id';
+    }
+
+    public function joinAddressDouble()
+    {
+        return 'address AS address_double ON address_double.id = person.address_id';
     }
 
     public function joinJob()

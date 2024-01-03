@@ -252,13 +252,13 @@ class MySqlFetcherTest extends TestCase
                         ["first_name" => "Roy"],
                     ]
                 ], [
-                    "id" => "2",
-                    "name" => "Vakkenvuller",
-                    "employees" => [
-                        ["first_name" => "Bruce"],
-                        ["first_name" => "George"]
-                    ]
+                "id" => "2",
+                "name" => "Vakkenvuller",
+                "employees" => [
+                    ["first_name" => "Bruce"],
+                    ["first_name" => "George"]
                 ]
+            ]
             ], $data
         );
     }
@@ -287,17 +287,17 @@ class MySqlFetcherTest extends TestCase
                         ["last_name" => "Karte"],
                     ]
                 ], [
-                    "id" => "2",
-                    "name" => "Vakkenvuller",
-                    "employees_a" => [
-                        ["first_name" => "Bruce"],
-                        ["first_name" => "George"]
-                    ],
-                    "employees_b" => [
-                        ["last_name" => "Pelissier"],
-                        ["last_name" => "Pelissier"]
-                    ]
+                "id" => "2",
+                "name" => "Vakkenvuller",
+                "employees_a" => [
+                    ["first_name" => "Bruce"],
+                    ["first_name" => "George"]
+                ],
+                "employees_b" => [
+                    ["last_name" => "Pelissier"],
+                    ["last_name" => "Pelissier"]
                 ]
+            ]
             ], $data
         );
     }
@@ -584,6 +584,56 @@ class MySqlFetcherTest extends TestCase
                 "job_address_id" => "4",
                 "job_company_id" => "2",
             ],
+        ], $data);
+    }
+
+    public function testCustomJoin()
+    {
+        $q = PersonFetcher::build()
+            ->select(['person.id', 'address_double.*']);
+
+        $data = $q->first();
+
+        $this->assertEquals([
+            "id" => "1",
+            "address_double_id" => "2",
+            "address_double_street" => "Burgemeester Pabstlaan",
+            "address_double_number" => "8-35",
+            "address_double_postcode" => "2131XE",
+            "address_double_country_code" => "NL",
+            "address_double_city_id" => "1"
+        ], $data);
+    }
+
+    public function testMultiCustomJoin()
+    {
+        $q = PersonFetcher::build()
+            ->select([
+                'person.id',
+                'address_double.*',
+                'address_double.city.name',
+                'address.*',
+                'address.city.name'
+            ]);
+
+        $data = $q->first();
+
+        $this->assertEquals([
+            "id" => "1",
+            "address_double_id" => "2",
+            "address_double_street" => "Burgemeester Pabstlaan",
+            "address_double_number" => "8-35",
+            "address_double_postcode" => "2131XE",
+            "address_double_country_code" => "NL",
+            "address_double_city_id" => "1",
+            "address_double_city_name" => "Hoofddorp",
+            "address_id" => "2",
+            "address_street" => "Burgemeester Pabstlaan",
+            "address_number" => "8-35",
+            "address_postcode" => "2131XE",
+            "address_country_code" => "NL",
+            "address_city_id" => "1",
+            "address_city_name" => "Hoofddorp"
         ], $data);
     }
 }
