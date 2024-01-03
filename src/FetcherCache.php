@@ -100,6 +100,7 @@ class FetcherCache
 
         $graph = [];
 
+        $highestTableId = 0;
         foreach ($fetcherClasses as $index => $fetcherClass) {
             /** @var BaseFetcher $fetcher */
             $fetcher = $objects[$index] = new $fetcherClass();
@@ -112,13 +113,22 @@ class FetcherCache
 
             $tables[$index] = $table;
             $tableIds[$table] = $index;
+            $highestTableId = $index;
         }
+
 
         foreach ($objects as $index => $object) {
             $joins = $object->getJoins();
             $graph[$index] = [];
             foreach ($joins as $join => $class) {
                 $graph[$index][$join] = $fetcherIds[$class];
+
+                if (!array_key_exists($join, $tableIds))
+                {
+                    $highestTableId++;
+                    $tables[$highestTableId] = $join;
+                    $tableIds[$join] = $highestTableId;
+                }
             }
 
             $prefixes[$index] = '/( |^)('.implode("|", array_keys($this->fieldPrefixes)).')('.implode("|", array_keys($object->getFields())).')( |$)/';
