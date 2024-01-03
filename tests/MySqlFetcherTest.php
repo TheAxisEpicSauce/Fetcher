@@ -249,6 +249,7 @@ class MySqlFetcherTest extends TestCase
                     "name" => "Software engineer",
                     "employees" => [
                         ["first_name" => "Raphael"],
+                        ["first_name" => "Roy"],
                     ]
                 ], [
                     "id" => "2",
@@ -279,9 +280,11 @@ class MySqlFetcherTest extends TestCase
                     "name" => "Software engineer",
                     "employees_a" => [
                         ["first_name" => "Raphael"],
+                        ["first_name" => "Roy"],
                     ],
                     "employees_b" => [
                         ["last_name" => "Pelissier"],
+                        ["last_name" => "Karte"],
                     ]
                 ], [
                     "id" => "2",
@@ -302,6 +305,7 @@ class MySqlFetcherTest extends TestCase
     public function testJoinSameTableFromDifferentOrigin()
     {
         $q = PersonFetcher::build()
+            ->where('id', 'IN', [1, 2, 3])
             ->select([
                 'id',
                 'first_name',
@@ -414,6 +418,9 @@ class MySqlFetcherTest extends TestCase
             'fields' => [[
                 'param' => 'address.country_code_is',
                 'value' => 'NL'
+            ], [
+                'param' => 'id_in',
+                "value" => [1, 2, 3]
             ]],
             'select' => ['id', 'first_name', 'job.name']
         ])->get();
@@ -503,7 +510,7 @@ class MySqlFetcherTest extends TestCase
         ], $data);
     }
 
-    public function testColumnCompare()
+    public function testColumnEqual()
     {
         $q = PersonFetcher::build()
             ->where('address_id', '$=', 'job.address_id')
@@ -515,7 +522,7 @@ class MySqlFetcherTest extends TestCase
             [
                 "id" => "4",
                 "first_name" => "Roy",
-                "last_name" => "KArte",
+                "last_name" => "Karte",
                 "date_of_birth" => "1997-04-30",
                 "address_id" => "3",
                 "job_id" => "1",
@@ -526,7 +533,10 @@ class MySqlFetcherTest extends TestCase
                 "job_company_id" => "1",
             ],
         ], $data);
+    }
 
+    public function testColumnNotEqual()
+    {
         $q = PersonFetcher::build()
             ->where('address_id', '$!=', 'job.address_id')
             ->select(['person.*', 'job.*']);
@@ -575,7 +585,6 @@ class MySqlFetcherTest extends TestCase
                 "job_company_id" => "2",
             ],
         ], $data);
-
     }
 }
 
