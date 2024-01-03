@@ -10,6 +10,7 @@ class FetcherCache
     private static string $CacheDir = '';
     private static string $CachePath = '';
     private static string $FetcherDir = '';
+    private static string $Namespace = '';
     private static ?FetcherCache $_instance = null;
     private static array $cache;
 
@@ -41,7 +42,7 @@ class FetcherCache
         '_not_in' =>  Operator::NOT_IN
     ];
 
-    public static function Setup(string $cacheDir, string $fetcherDir): void
+    public static function Setup(string $cacheDir, string $fetcherDir, string $namespace): void
     {
         if (!is_dir($cacheDir)) throw new \Exception($cacheDir. ' doesn`t not exists or is not a directory');
 
@@ -56,6 +57,7 @@ class FetcherCache
         self::$CacheDir = $cacheDir;
         self::$CachePath = $cachePath;
         self::$FetcherDir = $fetcherDir;
+        self::$Namespace = $namespace;
     }
 
     public static function Instance(): FetcherCache
@@ -156,8 +158,9 @@ class FetcherCache
             );
 
             $file = implode('\\', array_map(fn($a) => ucfirst($a), explode('\\', $file)));
+            $classPath = str_replace(self::$FetcherDir, self::$Namespace, $file);
 
-            if (is_subclass_of($file, BaseFetcher::class)) {
+            if (is_subclass_of($classPath, BaseFetcher::class)) {
                 $fetchers[] = $file;
             }
         }

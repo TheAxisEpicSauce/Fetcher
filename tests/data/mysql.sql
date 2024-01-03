@@ -244,7 +244,7 @@ CREATE TABLE `person` (
 
 LOCK TABLES `person` WRITE;
 /*!40000 ALTER TABLE `person` DISABLE KEYS */;
-INSERT INTO `person` VALUES (1,'Raphael','Pelissier','1997-04-30','2',1),(2,'Bruce','Pelissier','2001-06-25','1',2),(3,'George','Pelissier','2005-05-04','1',2),(4,'Roy','KArte','1997-04-30','3',1);
+INSERT INTO `person` VALUES (1,'Raphael','Pelissier','1997-04-30','2',1),(2,'Bruce','Pelissier','2001-06-25','1',2),(3,'George','Pelissier','2005-05-04','1',2),(4,'Roy','Karte','1997-04-30','3',1);
 /*!40000 ALTER TABLE `person` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -282,4 +282,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2024-01-03 14:24:24
+-- Dump completed on 2024-01-03 15:19:06
