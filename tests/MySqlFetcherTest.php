@@ -440,6 +440,7 @@ class MySqlFetcherTest extends TestCase
     public function testJoinTwice()
     {
         $q = PersonFetcher::build()
+            ->where('id', 'IN', [1, 2, 3])
             ->select(['id', 'first_name', 'address.*', 'address.city.name', 'job.address.*', 'job.address.city.name']);
 
         $data = $q->get();
@@ -508,11 +509,73 @@ class MySqlFetcherTest extends TestCase
             ->where('address_id', '$=', 'job.address_id')
             ->select(['person.*', 'job.*']);
 
-        dump($q->toSql());
+        $data = $q->get();
+
+        $this->assertEquals([
+            [
+                "id" => "4",
+                "first_name" => "Roy",
+                "last_name" => "KArte",
+                "date_of_birth" => "1997-04-30",
+                "address_id" => "3",
+                "job_id" => "1",
+                "job_job_type_id" => "1",
+                "job_name" => "Software engineer",
+                "job_salary" => "2000.00",
+                "job_address_id" => "3",
+                "job_company_id" => "1",
+            ],
+        ], $data);
+
+        $q = PersonFetcher::build()
+            ->where('address_id', '$!=', 'job.address_id')
+            ->select(['person.*', 'job.*']);
 
         $data = $q->get();
 
-        dd($data);
+
+        $this->assertEquals([
+            [
+                "id" => "1",
+                "first_name" => "Raphael",
+                "last_name" => "Pelissier",
+                "date_of_birth" => "1997-04-30",
+                "address_id" => "2",
+                "job_id" => "1",
+                "job_job_type_id" => "1",
+                "job_name" => "Software engineer",
+                "job_salary" => "2000.00",
+                "job_address_id" => "3",
+                "job_company_id" => "1",
+            ],
+            [
+                "id" => "2",
+                "first_name" => "Bruce",
+                "last_name" => "Pelissier",
+                "date_of_birth" => "2001-06-25",
+                "address_id" => "1",
+                "job_id" => "2",
+                "job_job_type_id" => "2",
+                "job_name" => "Vakkenvuller",
+                "job_salary" => "600.00",
+                "job_address_id" => "4",
+                "job_company_id" => "2",
+            ],
+            [
+                "id" => "3",
+                "first_name" => "George",
+                "last_name" => "Pelissier",
+                "date_of_birth" => "2005-05-04",
+                "address_id" => "1",
+                "job_id" => "2",
+                "job_job_type_id" => "2",
+                "job_name" => "Vakkenvuller",
+                "job_salary" => "600.00",
+                "job_address_id" => "4",
+                "job_company_id" => "2",
+            ],
+        ], $data);
+
     }
 }
 
