@@ -440,6 +440,8 @@ abstract class BaseFetcher implements Fetcher
 
     protected function joinType(int $fromId, int $toId): string
     {
+        return 'BELONGS_TO';
+
         $fetcherFrom = new (FetcherCache::Instance()->getFetcher($fromId));
 
         $keyFrom = FetcherCache::Instance()->getFetcherKey($fromId);
