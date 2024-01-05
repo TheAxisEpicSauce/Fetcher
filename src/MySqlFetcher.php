@@ -123,7 +123,7 @@ abstract class MySqlFetcher extends BaseFetcher
 
         foreach ($this->joinsToMake as $joinToMake) {
             $currentFetcher = $this;
-            $tableFrom = $this->table;
+            $tableFrom = $originalTableFrom = $this->table;
             $this->tableFetcherLookup[$tableFrom] = $this;
 
             $tablesAs = [];
@@ -132,7 +132,11 @@ abstract class MySqlFetcher extends BaseFetcher
 
                 $tableAs = $joinToMake->getTableAs($tableTo);
 
-                $fetcherTo = $currentFetcher->getJoins()[$tableTo];
+                $joinName = $joinToMake->getJoinName($originalTableFrom, $tableTo);
+
+                $fetcherTo = $currentFetcher->getJoins()[$joinName];
+
+                $originalTableFrom = $tableTo;
 
                 if (!array_key_exists($tableFrom, $joinsMade) || !in_array($tableAs, $joinsMade[$tableFrom])) {
                     if (!method_exists($currentFetcher, $joinMethod)) {
@@ -187,7 +191,7 @@ abstract class MySqlFetcher extends BaseFetcher
                     $tableTo = $tableAs;
                 }
                 $this->tableFetcherLookup[$tableTo] = $currentFetcher = new $fetcherTo();
-                $tableFrom = $tableTo;
+                $tableFrom = $tableAs;
             }
         }
 

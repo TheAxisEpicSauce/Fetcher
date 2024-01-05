@@ -14,6 +14,9 @@ class Join
     private string $fetcherClass;
     private string $type;
     private array $tableMapping = [];
+    /**
+     * @var JoinLink[]
+     */
     private array $links;
 
 
@@ -27,9 +30,9 @@ class Join
         $this->links = [];
     }
 
-    public function addLink(string $tableFrom, string $tableTo, string $type)
+    public function addLink(string $tableFrom, string $tableTo, string $joinName)
     {
-        $link = new JoinLink($tableFrom, $tableTo, $type);
+        $link = new JoinLink($tableFrom, $tableTo, $joinName);
         $linkB = array_key_exists($tableTo, $this->links)?$this->links[$tableTo]:null;
         $link->next = $linkB;
         if ($linkB) $linkB->prev = $link;
@@ -145,21 +148,29 @@ class Join
     {
         $this->valueType = $valueType;
     }
+
+    public function getJoinName(string $tableFrom, string $tableTo): ?string
+    {
+        foreach ($this->links as $link)
+            if ($link->getTableFrom() === $tableFrom && $link->getTableTo() === $tableTo) return $link->getJoinName();
+
+        return null;
+    }
 }
 
 class JoinLink
 {
-    private $tableFrom;
-    private $tableTo;
-    private $type;
-    public $prev;
-    public $next;
+    private string $tableFrom = '';
+    private string $tableTo = '';
+    private string $joinName = '';
+    public ?self $prev = null;
+    public ?self $next = null;
 
-    public function __construct(string $tableFrom, string $tableTo, string $type)
+    public function __construct(string $tableFrom, string $tableTo, string $joinName)
     {
         $this->tableFrom = $tableFrom;
         $this->tableTo = $tableTo;
-        $this->type = $type;
+        $this->joinName = $joinName;
         $prev = null;
         $next = null;
     }
@@ -174,12 +185,10 @@ class JoinLink
         return $this->tableTo;
     }
 
-    public function getType(): string
+    public function getJoinName(): string
     {
-        return $this->type;
+        return $this->joinName;
     }
-
-
 }
 
 
