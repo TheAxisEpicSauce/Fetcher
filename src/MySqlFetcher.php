@@ -147,47 +147,53 @@ abstract class MySqlFetcher extends BaseFetcher
 
                     $joinsMade[$tableFrom][] = $tableAs;
 
-                    $js = $currentFetcher->{$joinMethod}();
-                    if (!is_array($js)) $js = [$js];
-                    foreach ($js as $j) {
-                        $type = $joinToMake->isLeftJoin()?'LEFT JOIN':'JOIN';
+                    $joinParts = $currentFetcher->{$joinMethod}();
+                    if (!is_array($joinParts)) $joinParts = [$joinParts];
+
+                    foreach ($joinParts as $joinPart) {
+                        $joinType = $joinToMake->isLeftJoin()?'LEFT JOIN':'JOIN';
                         $originalTable = $fetcherTo::getTable();
 
-                        if (preg_match('/([a-zA-Z_`]+)( AS | as | ON | on )([`a-zA-Z_]+)( ON |)([ a-zA-Z._=\'`"]+)/', $j, $matches)) {
+                        if (preg_match('/([a-zA-Z_`]+)( AS | as | ON | on )([`a-zA-Z_]+)( ON |)([ a-zA-Z._=\'`"]+)/', $joinPart, $matches)) {
                             if ($matches[2] === ' AS ' || $matches[2] === ' as ') {
-                                $j = $matches[5];
+                                $joinPart = $matches[5];
                                 $tableTo = $matches[3];
                             } elseif ($matches[2] === ' ON ' || $matches[2] === ' on ') {
-                                $j = $matches[3].$matches[5];
+                                $joinPart = $matches[3].$matches[5];
                                 $tableTo = $matches[1];
                             }
                             $originalTable = $matches[1];
                         }
 
-                        $asString = $tableTo;
+                        $asPart = $tableTo;
 
                         $tableAs = $joinToMake->getTableAs($tableTo);
                         $filter = array_key_exists($tableTo, self::$joinsAs)?self::$joinsAs[$tableTo]['filter']:null;
-                        if ($filter !== null) $j .= ' AND '.$tableTo.'.'.$filter;
+                        if ($filter !== null) $joinPart .= ' AND '.$tableTo.'.'.$filter;
 
-                        if ($asString!==$tableAs) {
-                            $asString = $originalTable.' AS '.$tableAs;
+                        if ($asPart!==$tableAs) {
+                            $asPart = $originalTable.' AS '.$tableAs;
                             if ($joinName!==$originalTable)
                                 $tablesAs[$joinName] = $tableAs;
                             else
                                 $tablesAs[$originalTable] = $tableAs;
                         }
-
-                        foreach ($tablesAs as $tableA => $tableB) {
-                            $j = preg_replace(sprintf('/(\.)(%s)(\.)/', $tableA), '.'.$tableB.'.', $j);
-                            $j = preg_replace(sprintf('/(^)(%s)(\.)/', $tableA), $tableB.'.', $j);
-                            $j = preg_replace(sprintf('/( )(%s)(\.)/', $tableA), ' '.$tableB.'.', $j);
-                            $j = preg_replace(sprintf('/(\.`)(%s)(`\.)/', $tableA), '.`'.$tableB.'`.', $j);
-                            $j = preg_replace(sprintf('/(^`)(%s)(`\.)/', $tableA), '`'.$tableB.'`.', $j);
-                            $j = preg_replace(sprintf('/( `)(%s)(`\.)/', $tableA), ' `'.$tableB.'`.', $j);
+                        elseif ($joinName!==$originalTable)
+                        {
+                            $asPart = $originalTable.' AS '.$joinName;
+                            $tablesAs[$joinName] = $tableAs;
                         }
 
-                        $joinString .= sprintf(' %s %s ON %s', $type, $asString, $j);
+                        foreach ($tablesAs as $tableA => $tableB) {
+                            $joinPart = preg_replace(sprintf('/(\.)(%s)(\.)/', $tableA), '.'.$tableB.'.', $joinPart);
+                            $joinPart = preg_replace(sprintf('/(^)(%s)(\.)/', $tableA), $tableB.'.', $joinPart);
+                            $joinPart = preg_replace(sprintf('/( )(%s)(\.)/', $tableA), ' '.$tableB.'.', $joinPart);
+                            $joinPart = preg_replace(sprintf('/(\.`)(%s)(`\.)/', $tableA), '.`'.$tableB.'`.', $joinPart);
+                            $joinPart = preg_replace(sprintf('/(^`)(%s)(`\.)/', $tableA), '`'.$tableB.'`.', $joinPart);
+                            $joinPart = preg_replace(sprintf('/( `)(%s)(`\.)/', $tableA), ' `'.$tableB.'`.', $joinPart);
+                        }
+
+                        $joinString .= sprintf(' %s %s ON %s', $joinType, $asPart, $joinPart);
                     }
                 } else {
                     $tableTo = $tableAs;
