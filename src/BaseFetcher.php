@@ -381,8 +381,6 @@ abstract class BaseFetcher implements Fetcher
                 $pathTraveled = true;
             }
 
-            $joinNames[$fromId][$toId] = $tableTo;
-
             $toId = FetcherCache::Instance()->getTableId($tableTo);
             if ($toId === null)
             {
@@ -392,6 +390,8 @@ abstract class BaseFetcher implements Fetcher
                     $tableMappings[$tableTo] = FetcherCache::Instance()->getTable($toId);
                 }
             }
+
+            $joinNames[$fromId][$toId] = $tableTo;
 
             $idPath = $this->getIdPath($fromId, $toId);
             if ($fullIdPath)
