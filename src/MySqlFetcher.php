@@ -128,11 +128,10 @@ abstract class MySqlFetcher extends BaseFetcher
 
             $tablesAs = [];
             foreach ($joinToMake->getTables() as $tableTo) {
-                $joinMethod = 'join'.$this->studly($tableTo);
-
                 $tableAs = $joinToMake->getTableAs($tableTo);
 
                 $joinName = $joinToMake->getJoinName($originalTableFrom, $tableTo);
+                $joinMethod = 'join'.$this->studly($joinName);
 
                 $fetcherTo = $currentFetcher->getJoins()[$joinName];
 
@@ -165,15 +164,18 @@ abstract class MySqlFetcher extends BaseFetcher
                             $originalTable = $matches[1];
                         }
 
-                        $as = $tableTo;
+                        $asString = $tableTo;
 
-                        $tableTo = $joinToMake->getTableAs($tableTo);
+                        $tableAs = $joinToMake->getTableAs($tableTo);
                         $filter = array_key_exists($tableTo, self::$joinsAs)?self::$joinsAs[$tableTo]['filter']:null;
                         if ($filter !== null) $j .= ' AND '.$tableTo.'.'.$filter;
 
-                        if ($originalTable!==$tableTo) {
-                            $as = $originalTable.' AS '.$tableTo;
-                            $tablesAs[$originalTable] = $tableTo;
+                        if ($asString!==$tableAs) {
+                            $asString = $originalTable.' AS '.$tableAs;
+                            if ($joinName!==$originalTable)
+                                $tablesAs[$joinName] = $tableAs;
+                            else
+                                $tablesAs[$originalTable] = $tableAs;
                         }
 
                         foreach ($tablesAs as $tableA => $tableB) {
@@ -185,7 +187,7 @@ abstract class MySqlFetcher extends BaseFetcher
                             $j = preg_replace(sprintf('/( `)(%s)(`\.)/', $tableA), ' `'.$tableB.'`.', $j);
                         }
 
-                        $joinString .= sprintf(' %s %s ON %s', $type, $as, $j);
+                        $joinString .= sprintf(' %s %s ON %s', $type, $asString, $j);
                     }
                 } else {
                     $tableTo = $tableAs;
