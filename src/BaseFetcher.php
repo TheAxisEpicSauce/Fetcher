@@ -165,7 +165,7 @@ abstract class BaseFetcher implements Fetcher
     public static function buildAnd(): self
     {
         $fetcher = new static();
-        static::$Cache = FetcherCache::Instance($fetcher);
+        ststatic::$Cache = FetcherCache::Instance($fetcher);
 
         $fetcher->reset();
 
@@ -177,7 +177,7 @@ abstract class BaseFetcher implements Fetcher
     public static function buildOr(): self
     {
         $fetcher = new static();
-        static::$Cache = FetcherCache::Instance($fetcher);
+        ststatic::$Cache = FetcherCache::Instance($fetcher);
 
         $fetcher->reset();
 
@@ -214,7 +214,7 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     private function getTablePath(string $tableFrom, string $tableTo): ?array
     {
-        $graph = new Graph(self::$Cache->getGraph());
+        $graph = new Graph(static::$Cache->getGraph());
         $tablePath = $graph->breadthFirstSearch($tableFrom, $tableTo);
         if ($tablePath === null) return null;
         if (self::getMaxSearchDepth() !== null && (count($tablePath) - 1) > self::getMaxSearchDepth())
@@ -391,7 +391,7 @@ abstract class BaseFetcher implements Fetcher
                 continue;
             }
 
-            $fetcherClass = self::$Cache->getFetcherClass($tableFrom, $joinName);
+            $fetcherClass = static::$Cache->getFetcherClass($tableFrom, $joinName);
             $tableTo = $fetcherClass::getTable();
 
             $join->addLink($tableFrom, $tableTo, $joinName, $fetcherClass);
@@ -423,7 +423,7 @@ abstract class BaseFetcher implements Fetcher
     public static function buildFromArray(array $data): static
     {
         $fetcher = new static();
-        static::$Cache = FetcherCache::Instance($fetcher);
+        ststatic::$Cache = FetcherCache::Instance($fetcher);
 
         $fetcher->reset();
 
