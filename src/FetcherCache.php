@@ -205,7 +205,7 @@ class FetcherCache
 
     public function getFetcherClass(string $tableFrom, string $tableTo): string
     {
-        return self::$cache['graph'][self::$_instance->fetcherId][$tableFrom][$tableTo];
+        return self::$cache['graph'][$this->fetcherId][$tableFrom][$tableTo];
     }
 
     public function getFetcherIds()
