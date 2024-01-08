@@ -177,13 +177,19 @@ abstract class MySqlFetcher extends BaseFetcher
                             if ($tableAs!==$originalTable) {
                                 $asPart = $originalTable.' AS '.$tableAs;
                                 if ($joinName!==$originalTable)
+                                {
+                                    $tablesAs[$originalTable] = $joinName;
                                     $tablesAs[$joinName] = $tableAs;
+                                }
                                 else
+                                {
                                     $tablesAs[$originalTable] = $tableAs;
+                                }
                             }
                             elseif ($joinName!==$originalTable)
                             {
                                 $asPart = $originalTable.' AS '.$joinName;
+                                $tablesAs[$originalTable] = $joinName;
                                 $tablesAs[$joinName] = $tableAs;
                             }
 

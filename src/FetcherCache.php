@@ -13,6 +13,7 @@ class FetcherCache
     private static string $Namespace = '';
     private static ?FetcherCache $_instance = null;
     private static array $cache;
+    private static int $graphDepth = 5;
 
     private array $fieldPrefixes = [
         '' => Operator::EQUALS,
@@ -41,6 +42,8 @@ class FetcherCache
         '_in_like' =>  Operator::IN_LIKE,
         '_not_in' =>  Operator::NOT_IN
     ];
+    private ?string $fetcher = null;
+    private ?int $fetcherId = null;
 
     public static function Setup(string $cacheDir, string $fetcherDir, string $namespace): void
     {
@@ -60,9 +63,11 @@ class FetcherCache
         self::$Namespace = $namespace;
     }
 
-    public static function Instance(): FetcherCache
+    public static function Instance(BaseFetcher $fetcher): FetcherCache
     {
-        if (self::$_instance === null) return self::$_instance = self::Init();
+        if (self::$_instance === null) self::$_instance = self::Init();
+        self::$_instance->fetcher = $fetcher::class;
+        self::$_instance->fetcherId = self::$cache['fetcher_ids'][$fetcher::class];
         return self::$_instance;
     }
 
@@ -73,6 +78,11 @@ class FetcherCache
         return $instance;
     }
 
+    public static function setGraphDepth(int $graphDepth): void
+    {
+        self::$graphDepth = $graphDepth;
+    }
+
     public function loadCache(): bool
     {
         $content = file_get_contents(self::$CachePath);
@@ -81,60 +91,69 @@ class FetcherCache
         return true;
     }
 
-    public function cacheFetchers(): bool
+    public static function CacheFetchers(): bool
     {
         $fetcherClasses = [];
-        $this->scanDir(self::$FetcherDir, $fetcherClasses);
+        self::scanDir(self::$FetcherDir, $fetcherClasses);
 
         $keys = [];
         $fetchers = [];
         $fetcherIds = [];
-        $tables = [];
-        $tableIds = [];
 
-        $prefixes = [];
-        $suffixes = [];
+        $graphs = [];
 
-        /** @var BaseFetcher[] $objects */
-        $objects = [];
-
-        $graph = [];
-
-        foreach ($fetcherClasses as $index => $fetcherClass) {
+        foreach ($fetcherClasses as $fetcherId => $fetcherClass) {
+            $depth = 1;
+            $passedFetchers = [];
             /** @var BaseFetcher $fetcher */
-            $fetcher = $objects[$index] = new $fetcherClass();
-            $keys[$index] = $fetcher->getKey();
+            $fetcher = new $fetcherClass();
 
-            $fetchers[$index] = $fetcherClass;
-            $fetcherIds[$fetcherClass] = $index;
+            $fetcherIds[$fetcherClass] = $fetcherId;
+            $fetchers[$fetcherId] = $fetcherClass;
+            $keys[$fetcherId] = $fetcher->getKey();
 
-            $table = $fetcher::getTable();
+            $graph = [];
 
-            $tables[$index] = $table;
-            $tableIds[$table] = $index;
+            $graphBuilder = function ($fetcher, $joinedAs, $depth) use (&$graph, &$passedFetchers, &$graphBuilder)
+            {
+                $passedFetchers[$fetcher::class] = $fetcher::class;
+                $joins = $fetcher->getJoins();
+                $graph[$joinedAs] = [];
+
+                foreach ($joins as $joinName => $joinFetcherClass)
+                {
+                    $graph[$joinedAs][$joinName] = $joinFetcherClass;
+                    if ($depth <= self::$graphDepth)
+                    {
+                        if (!array_key_exists($joinName, $graph))
+                        {
+                            $graphBuilder(new ($joinFetcherClass), $joinName, $depth+1);
+                        }
+                    }
+                }
+            };
+
+            $graphBuilder($fetcher, $fetcher::getTable(), $depth);
+
+            $graphs[$fetcherId] = $graph;
         }
-
-
-        foreach ($objects as $index => $object) {
-            $joins = $object->getJoins();
-            $graph[$index] = [];
-            foreach ($joins as $join => $class) {
-                $graph[$index][$join] = $fetcherIds[$class];
-            }
-
-            $prefixes[$index] = '/( |^)('.implode("|", array_keys($this->fieldPrefixes)).')('.implode("|", array_keys($object->getFields())).')( |$)/';
-            $suffixes[$index] = '/( |^)('.implode("|", array_keys($object->getFields())).')('.implode("|", array_keys($this->fieldSuffixes)).')( |$)/';
-        }
+//
+//        foreach ($objects as $index => $object) {
+//            $joins = $object->getJoins();
+//            $graph[$index] = [];
+//            foreach ($joins as $join => $class) {
+//                $graph[$index][$join] = $fetcherIds[$class];
+//            }
+//
+//            $prefixes[$index] = '/( |^)('.implode("|", array_keys($this->fieldPrefixes)).')('.implode("|", array_keys($object->getFields())).')( |$)/';
+//            $suffixes[$index] = '/( |^)('.implode("|", array_keys($object->getFields())).')('.implode("|", array_keys($this->fieldSuffixes)).')( |$)/';
+//        }
 
         self::$cache = [
             'keys' => $keys,
             'fetchers' => $fetchers,
             'fetcher_ids' => $fetcherIds,
-            'tables' => $tables,
-            'table_ids' => $tableIds,
-            'prefixes' => $prefixes,
-            'suffixes' => $suffixes,
-            'graph' => $graph
+            'graph' => $graphs
         ];
 
         file_put_contents(self::$CachePath, json_encode(self::$cache));
@@ -142,13 +161,13 @@ class FetcherCache
         return true;
     }
 
-    private function scanDir(string $path, array &$fetchers)
+    private static function ScanDir(string $path, array &$fetchers)
     {
         $files = glob($path.'/*');
 
         foreach ($files as $file) {
             if (is_dir($file)) {
-                $this->scanDir($file, $fetchers);
+                self::ScanDir($file, $fetchers);
                 continue;
             }
             $file = str_replace(
@@ -180,6 +199,11 @@ class FetcherCache
     public function getFetcher(int $id)
     {
         return self::$cache['fetchers'][$id];
+    }
+
+    public function getFetcherClass(string $tableFrom, string $tableTo): string
+    {
+        return self::$cache['graph'][self::$_instance->fetcherId][$tableFrom][$tableTo];
     }
 
     public function getFetcherIds()
@@ -235,11 +259,6 @@ class FetcherCache
 
     public function getGraph()
     {
-        return self::$cache['graph'];
-    }
-
-    public function getNodeLinks(int $fetcherId)
-    {
-        return self::$cache['graph'][$fetcherId];
+        return self::$cache['graph'][self::$_instance->fetcherId];
     }
 }

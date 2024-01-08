@@ -38,16 +38,18 @@ class Graph
         );
 
         $path[$origin]->push($origin);
-
         $found = false;
         // while queue is not empty and destination not found
         while (!$q->isEmpty() && $q->bottom() != $destination) {
             $t = $q->dequeue();
 
-            if (!empty($this->graph[$t])) {
+            if (!empty($this->graph[$t]))
+            {
                 // for each adjacent neighbor
-                foreach ($this->graph[$t] as $vertex) {
-                    if (!$this->visited[$vertex]) {
+                foreach ($this->graph[$t] as $vertex => $adj)
+                {
+                    if (!$this->visited[$vertex])
+                    {
                         // if not yet visited, enqueue vertex and mark
                         // as visited
                         $q->enqueue($vertex);
@@ -64,8 +66,9 @@ class Graph
             $idPath = [];
 
             foreach ($path[$destination] as $vertex) {
-                $idPath[] =$vertex;
+                $idPath[] = $vertex;
             }
+
             return $idPath;
         }
         else {

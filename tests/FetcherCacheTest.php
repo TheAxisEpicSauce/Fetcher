@@ -37,6 +37,6 @@ class FetcherCacheTest extends TestCase
 
         FetcherCache::Setup('tests/cache', 'tests/MySqlFetchers', 'Tests\\MySqlFetchers');
 
-        FetcherCache::Instance()->cacheFetchers();
+        FetcherCache::CacheFetchers();
     }
 }

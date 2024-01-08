@@ -29,6 +29,7 @@ use http\Message;
 abstract class BaseFetcher implements Fetcher
 {
     static mixed $connection = null;
+    private static ?FetcherCache $Cache = null;
 
     private array $fieldPrefixes = [
         '' => Operator::EQUALS,
@@ -123,11 +124,6 @@ abstract class BaseFetcher implements Fetcher
         return str_replace(['/', '\\'], '.', get_class($this));
     }
 
-    private function fetcherId()
-    {
-        return FetcherCache::Instance()->getFetcherIds()[static::class];
-    }
-
     public abstract function getFields(): array;
 
     private function getFieldType(string $field): string
@@ -136,16 +132,6 @@ abstract class BaseFetcher implements Fetcher
     }
 
     public abstract function getJoins(): array;
-
-    private function getFieldPrefixRegex(): string
-    {
-        return FetcherCache::Instance()->getPrefix($this->fetcherId());
-    }
-
-    private function getFieldSuffixRegex(): string
-    {
-        return FetcherCache::Instance()->getSuffix($this->fetcherId());
-    }
     #endregion
 
     #region Settings Getters/Setters
@@ -179,6 +165,7 @@ abstract class BaseFetcher implements Fetcher
     public static function buildAnd(): self
     {
         $fetcher = new static();
+        self::$Cache = FetcherCache::Instance($fetcher);
 
         $fetcher->reset();
 
@@ -190,6 +177,7 @@ abstract class BaseFetcher implements Fetcher
     public static function buildOr(): self
     {
         $fetcher = new static();
+        self::$Cache = FetcherCache::Instance($fetcher);
 
         $fetcher->reset();
 
@@ -224,20 +212,17 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     // Fetcher mapping
     //-------------------------------------------
-    private function getIdPath(int $fromId, int $toId): array
+    private function getTablePath(string $tableFrom, string $tableTo): array
     {
-        $graph = new Graph(FetcherCache::Instance()->getGraph());
-        $path = $graph->breadthFirstSearch($fromId, $toId);
-        if ($path === null) return [];
-        if (self::getMaxSearchDepth() !== null && (count($path) - 1) > self::getMaxSearchDepth())
+        $graph = new Graph(self::$Cache->getGraph());
+        $tablePath = $graph->breadthFirstSearch($tableFrom, $tableTo);
+        if ($tablePath === null) return [];
+        if (self::getMaxSearchDepth() !== null && (count($tablePath) - 1) > self::getMaxSearchDepth())
         {
-            $tablePath = [];
-            foreach ($path as $tableId) $tablePath[] = FetcherCache::Instance()->getTable($tableId);
-
             throw new MaxSearchException($tablePath);
         }
 
-        return $path;
+        return $tablePath;
     }
 
     #region Magic Method
@@ -361,9 +346,9 @@ abstract class BaseFetcher implements Fetcher
 
         $pathTraveled = false;
 
-        $fullIdPath = null;
+        $fullJoinPath = null;
 
-        $fromId = $baseId = $this->fetcherId();
+        $baseTableFrom = $tableFrom = $this->table;
         $toId = null;
 
         $tableMappings = [];
@@ -381,46 +366,36 @@ abstract class BaseFetcher implements Fetcher
                 $pathTraveled = true;
             }
 
-            $toId = FetcherCache::Instance()->getTableId($tableTo);
-            if ($toId === null)
+            $joinPath = $this->getTablePath($tableFrom, $tableTo);
+            if ($fullJoinPath)
             {
-                $toId = FetcherCache::Instance()->getTableId($tableTo, $fromId);
-                if ($toId !== null)
-                {
-                    $tableMappings[$tableTo] = FetcherCache::Instance()->getTable($toId);
-                }
-            }
-
-            $joinNames[$fromId][$toId] = $tableTo;
-
-            $idPath = $this->getIdPath($fromId, $toId);
-            if ($fullIdPath)
-            {
-                array_shift($idPath);
-                $fullIdPath = array_merge($fullIdPath, $idPath);
+                array_shift($joinPath);
+                $fullJoinPath = array_merge($fullJoinPath, $joinPath);
             }
             else
             {
-                $fullIdPath = $idPath;
+                $fullJoinPath = $joinPath;
             }
 
-            $fromId = $toId;
+            $tableFrom = $tableTo;
 
         } while (!$pathTraveled);
 
-        $traveledIdPath = array_reverse($fullIdPath);
+        $tableFrom = $fetcherTableFrom = null;
 
-        $previousTableTo = FetcherCache::Instance()->getTable($toId);
-        $previousIdTo = $toId;
+        $join = new Join();
 
-        $join = new Join(FetcherCache::Instance()->getFetcher($toId));
+        foreach ($fullJoinPath as $joinName) {
+            if ($tableFrom === null) {
+                $tableFrom = $joinName;
+                continue;
+            }
 
-        foreach ($traveledIdPath as $id) {
-            if ($id === $toId) continue;
+            $fetcherClass = self::$Cache->getFetcherClass($tableFrom, $joinName);
+            $tableTo = $fetcherClass::getTable();
 
-            $join->addLink(FetcherCache::Instance()->getTable($id), $previousTableTo, $joinNames[$id][$previousIdTo]);
-            $previousTableTo = FetcherCache::Instance()->getTable($id);
-            $previousIdTo = $id;
+            $join->addLink($tableFrom, $tableTo, $joinName, $fetcherClass);
+            $tableFrom = $tableTo;
         }
 
         foreach ($tableMappings as $a => $b) {
@@ -440,42 +415,6 @@ abstract class BaseFetcher implements Fetcher
         }
 
         return $join;
-    }
-
-    protected function joinType(int $fromId, int $toId): string
-    {
-        return 'BELONGS_TO';
-
-        $fetcherFrom = new (FetcherCache::Instance()->getFetcher($fromId));
-
-        $keyFrom = FetcherCache::Instance()->getFetcherKey($fromId);
-        $keyTo = FetcherCache::Instance()->getFetcherKey($toId);
-
-        $tableFrom = FetcherCache::Instance()->getTable($fromId);
-        $tableTo = FetcherCache::Instance()->getTable($toId);
-        $method = 'join'.$this->studly($tableTo);
-
-        if (is_array($fetcherFrom->$method())) return 'MANY_TO_MANY';
-
-        $string = strtolower($fetcherFrom->$method());
-        if(strpos($string, 'and')) $string = substr($string, strpos($string, 'and'));
-        $string = str_replace(['`', ' '], '', $string);
-
-        $list = explode('=', $string);
-        $fromMatches = false;
-        $toMatches = false;
-        foreach ($list as $item)
-        {
-            [$table, $field] = $this->explodeField($item);
-            if ($table === $tableFrom && $field === $keyFrom) $fromMatches = true;
-            if ($table === $tableTo && $field == $keyTo) $toMatches = true;
-        }
-
-        if ($fromMatches) $type = 'HAS_MANY';
-        elseif ($toMatches) $type = 'BELONGS_TO';
-        else $type = 'MANY_TO_MANY';
-
-        return $type;
     }
 
     //-------------------------------------------
@@ -564,7 +503,7 @@ abstract class BaseFetcher implements Fetcher
         $param($repo);
         $group = $repo->fieldGroup;
         foreach ($repo->joinsToMake as $joinToMake) {
-            $this->joinsToMake[$joinToMake->pathEndAs()] = $joinToMake;
+            $this->joinsToMake[$joinToMake->getPathAs()] = $joinToMake;
         }
         $this->fieldGroup->addField($group);
     }

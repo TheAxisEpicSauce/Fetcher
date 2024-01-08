@@ -11,6 +11,7 @@ namespace Fetcher\Join;
 class Join
 {
     private string $path;
+    private string $pathAs;
     private string $fetcherClass;
     private string $type;
     private array $tableMapping = [];
@@ -22,21 +23,24 @@ class Join
 
     private ?string $valueType = null;
 
-    public function __construct(string $fetcherClass, string $type = 'left')
+    public function __construct()
     {
+        $this->fetcherClass = '';
         $this->path = '';
-        $this->fetcherClass = $fetcherClass;
-        $this->type = $type;
+        $this->type = 'left';
         $this->links = [];
     }
 
-    public function addLink(string $tableFrom, string $tableTo, string $joinName)
+    public function addLink(string $tableFrom, string $tableTo, string $joinName, string $fetcherClass)
     {
         $link = new JoinLink($tableFrom, $tableTo, $joinName);
-        $linkB = array_key_exists($tableTo, $this->links)?$this->links[$tableTo]:null;
-        $link->next = $linkB;
-        if ($linkB) $linkB->prev = $link;
-        $this->links[$tableFrom] = $link;
+        $linkB = array_key_exists($tableFrom, $this->links)?$this->links[$tableFrom]:null;
+        $link->prev = $linkB;
+        if ($linkB) $linkB->next = $link;
+        $this->links[$tableTo] = $link;
+        $this->fetcherClass = $fetcherClass;
+
+        $this->addTableMapping($tableTo, $joinName);
 
         $this->generatePath();
     }
@@ -55,6 +59,13 @@ class Join
         };
 
         $this->path = $path;
+
+        $pathParts = explode('.', $this->path);
+        $pathAsParts = [];
+        foreach ($pathParts as $pathPart)
+            $pathAsParts[] = $this->getTableAs($pathPart);
+
+        $this->pathAs = implode('.', $pathAsParts);
     }
 
     /**
@@ -67,12 +78,7 @@ class Join
 
     public function getPathAs(): string
     {
-        $pathParts = explode('.', $this->path);
-        $pathAsParts = [];
-        foreach ($pathParts as $pathPart)
-            $pathAsParts[] = $this->getTableAs($pathPart);
-
-        return implode('.', $pathAsParts);
+        return $this->pathAs;
     }
 
     public function pathEnd()

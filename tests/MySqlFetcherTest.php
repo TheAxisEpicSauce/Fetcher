@@ -25,7 +25,7 @@ class MySqlFetcherTest extends TestCase
 
     protected function setUp(): void
     {
-        FetcherCache::Instance()->cacheFetchers();
+        FetcherCache::CacheFetchers();
 
         MySqlFetcher::setConnection(MysqlDbHelper::client());
         MysqlDbHelper::up();
