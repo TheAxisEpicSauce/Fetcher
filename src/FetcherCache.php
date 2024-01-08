@@ -261,6 +261,6 @@ class FetcherCache
 
     public function getGraph()
     {
-        return self::$cache['graph'][self::$_instance->fetcherId];
+        return self::$cache['graph'][$this->fetcherId];
     }
 }
