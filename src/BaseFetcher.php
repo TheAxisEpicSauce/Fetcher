@@ -165,7 +165,7 @@ abstract class BaseFetcher implements Fetcher
     public static function buildAnd(): self
     {
         $fetcher = new static();
-        self::$Cache = FetcherCache::Instance($fetcher);
+        static::$Cache = FetcherCache::Instance($fetcher);
 
         $fetcher->reset();
 
@@ -177,7 +177,7 @@ abstract class BaseFetcher implements Fetcher
     public static function buildOr(): self
     {
         $fetcher = new static();
-        self::$Cache = FetcherCache::Instance($fetcher);
+        static::$Cache = FetcherCache::Instance($fetcher);
 
         $fetcher->reset();
 
@@ -212,11 +212,11 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     // Fetcher mapping
     //-------------------------------------------
-    private function getTablePath(string $tableFrom, string $tableTo): array
+    private function getTablePath(string $tableFrom, string $tableTo): ?array
     {
         $graph = new Graph(self::$Cache->getGraph());
         $tablePath = $graph->breadthFirstSearch($tableFrom, $tableTo);
-        if ($tablePath === null) return [];
+        if ($tablePath === null) return null;
         if (self::getMaxSearchDepth() !== null && (count($tablePath) - 1) > self::getMaxSearchDepth())
         {
             throw new MaxSearchException($tablePath);
@@ -423,7 +423,7 @@ abstract class BaseFetcher implements Fetcher
     public static function buildFromArray(array $data): static
     {
         $fetcher = new static();
-        self::$Cache = FetcherCache::Instance($fetcher);
+        static::$Cache = FetcherCache::Instance($fetcher);
 
         $fetcher->reset();
 
