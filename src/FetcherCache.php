@@ -129,7 +129,7 @@ class FetcherCache
                         $graph[$joinedAs][$joinName] = $joinFetcherClass;
                         if (!array_key_exists($joinName, $graph))
                         {
-                            $graphBuilder(new ($joinFetcherClass), $joinName, $depth+1);
+                            $graphBuilder(new ($joinFetcherClass), $joinName, $depth);
                         }
                     }
                 }

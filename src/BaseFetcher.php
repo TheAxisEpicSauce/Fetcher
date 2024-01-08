@@ -216,6 +216,10 @@ abstract class BaseFetcher implements Fetcher
     {
         $graph = new Graph($this->cache->getGraph());
         $tablePath = $graph->breadthFirstSearch($tableFrom, $tableTo);
+        if ($tablePath === null)
+        {
+            dd($tableFrom, $tableTo, $this->cache->getGraph());
+        }
         if ($tablePath === null) return null;
         if (self::getMaxSearchDepth() !== null && (count($tablePath) - 1) > self::getMaxSearchDepth())
         {

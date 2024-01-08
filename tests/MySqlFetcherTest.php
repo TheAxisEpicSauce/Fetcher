@@ -170,7 +170,7 @@ class MySqlFetcherTest extends TestCase
         ])->toSql();
 
         $this->assertEquals(
-            'SELECT `person`.`id`, `person`.`first_name`, `person`.`last_name`, `person`.`date_of_birth`, `address`.`street`, `address`.`number`, `address`.`postcode` FROM `person` LEFT JOIN address ON address.id = person.address_id GROUP BY `person`.`id`',
+            'SELECT `person`.`id`, `person`.`first_name`, `person`.`last_name`, `person`.`date_of_birth`, `address`.`street`, `address`.`number`, `address`.`postcode` FROM `person` LEFT JOIN `address` ON address.id = person.address_id GROUP BY `person`.`id`',
             $query
         );
     }
@@ -219,6 +219,28 @@ class MySqlFetcherTest extends TestCase
                     "employees" => [
                         ["first_name" => "Bruce"],
                         ["first_name" => "George"]
+                    ]
+                ]
+            ], $data);
+    }
+
+    public function testSubFetchWhere()
+    {
+        $data = JobFetcher::build()
+            ->sub('person', function (BaseFetcher $fetcher) {
+                $fetcher->where('id', 1)
+                    ->select(['person.first_name']);
+            }, 'get', 'employees')
+            ->where('id', 1)
+            ->select(['id', 'name'])->get();
+
+        $this->assertEquals(
+            [
+                [
+                    "id" => "1",
+                    "name" => "Software engineer",
+                    "employees" => [
+                        ["first_name" => "Raphael"]
                     ]
                 ]
             ], $data);
@@ -287,17 +309,17 @@ class MySqlFetcherTest extends TestCase
                         ["last_name" => "Karte"],
                     ]
                 ], [
-                "id" => "2",
-                "name" => "Vakkenvuller",
-                "employees_a" => [
-                    ["first_name" => "Bruce"],
-                    ["first_name" => "George"]
-                ],
-                "employees_b" => [
-                    ["last_name" => "Pelissier"],
-                    ["last_name" => "Pelissier"]
+                    "id" => "2",
+                    "name" => "Vakkenvuller",
+                    "employees_a" => [
+                        ["first_name" => "Bruce"],
+                        ["first_name" => "George"]
+                    ],
+                    "employees_b" => [
+                        ["last_name" => "Pelissier"],
+                        ["last_name" => "Pelissier"]
+                    ]
                 ]
-            ]
             ], $data
         );
     }
