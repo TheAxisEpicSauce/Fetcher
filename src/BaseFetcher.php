@@ -165,7 +165,7 @@ abstract class BaseFetcher implements Fetcher
     public static function buildAnd(): self
     {
         $fetcher = new static();
-        ststatic::$Cache = FetcherCache::Instance($fetcher);
+        static::$Cache = FetcherCache::Instance($fetcher);
 
         $fetcher->reset();
 
@@ -177,7 +177,7 @@ abstract class BaseFetcher implements Fetcher
     public static function buildOr(): self
     {
         $fetcher = new static();
-        ststatic::$Cache = FetcherCache::Instance($fetcher);
+        static::$Cache = FetcherCache::Instance($fetcher);
 
         $fetcher->reset();
 
@@ -423,7 +423,7 @@ abstract class BaseFetcher implements Fetcher
     public static function buildFromArray(array $data): static
     {
         $fetcher = new static();
-        ststatic::$Cache = FetcherCache::Instance($fetcher);
+        static::$Cache = FetcherCache::Instance($fetcher);
 
         $fetcher->reset();
 
