@@ -120,11 +120,12 @@ class FetcherCache
                 $joins = $fetcher->getJoins();
                 $graph[$joinedAs] = [];
 
-                foreach ($joins as $joinName => $joinFetcherClass)
+                $depth+=1;
+                if ($depth <= self::$graphDepth)
                 {
-                    $graph[$joinedAs][$joinName] = $joinFetcherClass;
-                    if ($depth <= self::$graphDepth)
+                    foreach ($joins as $joinName => $joinFetcherClass)
                     {
+                        $graph[$joinedAs][$joinName] = $joinFetcherClass;
                         if (!array_key_exists($joinName, $graph))
                         {
                             $graphBuilder(new ($joinFetcherClass), $joinName, $depth+1);
