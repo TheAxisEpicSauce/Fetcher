@@ -23,13 +23,19 @@ class CompanyFetcher extends MySqlFetcher
     public function getJoins(): array
     {
         return [
-            'boss' => PersonFetcher::class
+            'boss' => PersonFetcher::class,
+            'job' => JobFetcher::class
         ];
     }
 
     public function joinBoss()
     {
         return 'person AS boss on boss.id = company.boss_id';
+    }
+
+    public function joinJob()
+    {
+        return 'job.company_id = company.id';
     }
 
 }

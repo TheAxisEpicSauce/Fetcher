@@ -19,6 +19,13 @@ class RelationFetcher extends MySqlFetcher
 
     public function getJoins(): array
     {
-        return [];
+        return [
+            'person' => PersonFetcher::class
+        ];
+    }
+
+    public function joinPerson()
+    {
+        return 'person.id = relation.person_a_id';
     }
 }
