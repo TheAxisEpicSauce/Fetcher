@@ -140,6 +140,7 @@ abstract class MySqlFetcher extends BaseFetcher
                 if (array_key_exists($tableFrom, $joinsMade) && array_key_exists($tableAs, $joinsMade[$tableFrom]))
                 {
                     $tablesAs = array_merge($tablesAs, $joinsMade[$tableFrom][$tableAs]);
+                    $tableTo = $tableAs;
                 }
                 else
                 {
@@ -211,8 +212,6 @@ abstract class MySqlFetcher extends BaseFetcher
 
                     $joinsMade[$tableFrom][$tableAs] = $tablesAs;
 
-                } else {
-                    $tableTo = $tableAs;
                 }
                 $this->tableFetcherLookup[$tableTo] = $currentFetcher = new $fetcherTo();
                 $tableFrom = $tableAs;
