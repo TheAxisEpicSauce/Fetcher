@@ -367,6 +367,11 @@ abstract class BaseFetcher implements Fetcher
             }
 
             $joinPath = $this->getTablePath($tableFrom, $tableTo);
+            if ($joinPath === null)
+            {
+                $this->addBuildError(sprintf('Missing path from %s -> %s', $tableFrom, $tableTo));
+                return null;
+            }
             if ($fullJoinPath)
             {
                 array_shift($joinPath);
