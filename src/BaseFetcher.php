@@ -423,6 +423,7 @@ abstract class BaseFetcher implements Fetcher
     public static function buildFromArray(array $data): static
     {
         $fetcher = new static();
+        self::$Cache = FetcherCache::Instance($fetcher);
 
         $fetcher->reset();
 
