@@ -65,10 +65,11 @@ class FetcherCache
 
     public static function Instance(BaseFetcher $fetcher): FetcherCache
     {
-        if (self::$_instance === null) self::$_instance = self::Init();
-        self::$_instance->fetcher = $fetcher::class;
-        self::$_instance->fetcherId = self::$cache['fetcher_ids'][$fetcher::class];
-        return self::$_instance;
+        $instance = self::Init();
+        $instance->fetcher = $fetcher::class;
+        $instance->fetcherId = self::$cache['fetcher_ids'][$fetcher::class];
+        $instance::$_instance = $instance;
+        return $instance;
     }
 
     private static function Init(): FetcherCache
