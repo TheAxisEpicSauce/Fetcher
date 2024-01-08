@@ -313,9 +313,12 @@ abstract class MySqlFetcher extends BaseFetcher
         };
 
         $where = substr($fieldToStringClosure($this->fieldGroup), 1, -1);
-        $emptyAnd = substr($where, 0, 7) === '() AND ';
-        if ($emptyAnd) {
+        if (str_starts_with($where, '() AND ')) {
             $where = substr($where, 7);
+        }
+        elseif (str_starts_with($where, '(()) AND '))
+        {
+            $where = substr($where, 9);
         }
 
         return empty($where)?'':' WHERE '.$where;
