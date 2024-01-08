@@ -137,15 +137,18 @@ abstract class MySqlFetcher extends BaseFetcher
 
                 $originalTableFrom = $tableTo;
 
-                if (!array_key_exists($tableFrom, $joinsMade) || !in_array($tableAs, $joinsMade[$tableFrom])) {
+                if (array_key_exists($tableFrom, $joinsMade) && array_key_exists($tableAs, $joinsMade[$tableFrom]))
+                {
+                    $tablesAs = array_merge($tablesAs, $joinsMade[$tableFrom][$tableAs]);
+                }
+                else
+                {
                     if (!method_exists($currentFetcher, $joinMethod)) {
                         $this->addBuildError(sprintf(
                             '%s misses join method %s', $currentFetcher->getName(), $joinMethod
                         ));
                         continue;
                     }
-
-                    $joinsMade[$tableFrom][] = $tableAs;
 
                     $joinParts = $currentFetcher->{$joinMethod}();
                     if (!is_array($joinParts)) $joinParts = [$joinParts];
@@ -205,6 +208,9 @@ abstract class MySqlFetcher extends BaseFetcher
 
                         $joinString .= sprintf(' %s %s ON %s', $joinType, $asPart, $joinPart);
                     }
+
+                    $joinsMade[$tableFrom][$tableAs] = $tablesAs;
+
                 } else {
                     $tableTo = $tableAs;
                 }
