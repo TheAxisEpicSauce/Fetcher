@@ -295,7 +295,6 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     // Handle where call
     //-------------------------------------------
-
     public function where($fullField, $operator, $value = null): self
     {
         if (func_num_args() === 2)

@@ -59,10 +59,20 @@ abstract class MySqlFetcher extends BaseFetcher
         $subFetchedData = [];
         $subFetchFields = [];
 
-        $stmt = static::$connection->prepare($this->queryString);
-        $stmt->execute($this->queryValues);
+        try
+        {
+            $stmt = static::$connection->prepare($this->queryString);
+            $stmt->execute($this->queryValues);
 
-        $list = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $list = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+        catch (Exception $e)
+        {
+            throw new Exception(sprintf(
+                "failed to execute query %s", $this->queryString
+            ), $e->getCode(), $e);
+        }
+
 
         if (count($this->subFetches) > 0) {
             $keyField = $this->key;
@@ -198,13 +208,19 @@ abstract class MySqlFetcher extends BaseFetcher
                             }
 
                             foreach ($tablesAs as $tableA => $tableB) {
-                                $joinPart = preg_replace(sprintf('/(\.)(%s)(\.)/', $tableA), '.'.$tableB.'.', $joinPart);
-                                $joinPart = preg_replace(sprintf('/(^)(%s)(\.)/', $tableA), $tableB.'.', $joinPart);
-                                $joinPart = preg_replace(sprintf('/( )(%s)(\.)/', $tableA), ' '.$tableB.'.', $joinPart);
+                                $tableA = str_replace('`', '', $tableA);
+                                $tableB = str_replace('`', '', $tableB);
+
                                 $joinPart = preg_replace(sprintf('/(\.`)(%s)(`\.)/', $tableA), '.`'.$tableB.'`.', $joinPart);
                                 $joinPart = preg_replace(sprintf('/(^`)(%s)(`\.)/', $tableA), '`'.$tableB.'`.', $joinPart);
                                 $joinPart = preg_replace(sprintf('/( `)(%s)(`\.)/', $tableA), ' `'.$tableB.'`.', $joinPart);
+                                $joinPart = preg_replace(sprintf('/(\.)(%s)(\.)/', $tableA), '.`'.$tableB.'`.', $joinPart);
+                                $joinPart = preg_replace(sprintf('/(^)(%s)(\.)/', $tableA), '`'.$tableB.'`.', $joinPart);
+                                $joinPart = preg_replace(sprintf('/( )(%s)(\.)/', $tableA), ' `'.$tableB.'`.', $joinPart);
                             }
+
+                            $asPart = str_replace('`', '', $asPart);
+                            $asPart = implode(' AS ', array_map(fn($s) => '`'.$s.'`', explode(' AS ', $asPart)));
                         }
 
                         $joinString .= sprintf(' %s %s ON %s', $joinType, $asPart, $joinPart);
