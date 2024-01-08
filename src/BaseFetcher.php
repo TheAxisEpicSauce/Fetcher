@@ -29,7 +29,7 @@ use http\Message;
 abstract class BaseFetcher implements Fetcher
 {
     static mixed $connection = null;
-    private static ?FetcherCache $Cache = null;
+    private ?FetcherCache $cache = null;
 
     private array $fieldPrefixes = [
         '' => Operator::EQUALS,
@@ -165,7 +165,7 @@ abstract class BaseFetcher implements Fetcher
     public static function buildAnd(): self
     {
         $fetcher = new static();
-        static::$Cache = FetcherCache::Instance($fetcher);
+        $fetcher->cache = FetcherCache::Instance($fetcher);
 
         $fetcher->reset();
 
@@ -177,7 +177,7 @@ abstract class BaseFetcher implements Fetcher
     public static function buildOr(): self
     {
         $fetcher = new static();
-        static::$Cache = FetcherCache::Instance($fetcher);
+        $fetcher->cache = FetcherCache::Instance($fetcher);
 
         $fetcher->reset();
 
@@ -214,7 +214,7 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     private function getTablePath(string $tableFrom, string $tableTo): ?array
     {
-        $graph = new Graph(static::$Cache->getGraph());
+        $graph = new Graph($this->cache->getGraph());
         $tablePath = $graph->breadthFirstSearch($tableFrom, $tableTo);
         if ($tablePath === null) return null;
         if (self::getMaxSearchDepth() !== null && (count($tablePath) - 1) > self::getMaxSearchDepth())
@@ -396,7 +396,7 @@ abstract class BaseFetcher implements Fetcher
                 continue;
             }
 
-            $fetcherClass = static::$Cache->getFetcherClass($tableFrom, $joinName);
+            $fetcherClass = $this->cache->getFetcherClass($tableFrom, $joinName);
             $tableTo = $fetcherClass::getTable();
 
             $join->addLink($tableFrom, $tableTo, $joinName, $fetcherClass);
@@ -428,7 +428,7 @@ abstract class BaseFetcher implements Fetcher
     public static function buildFromArray(array $data): static
     {
         $fetcher = new static();
-        static::$Cache = FetcherCache::Instance($fetcher);
+        $fetcher->cache = FetcherCache::Instance($fetcher);
 
         $fetcher->reset();
 
