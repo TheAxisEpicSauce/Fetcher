@@ -59,4 +59,9 @@ class SubFetchField implements Field
     {
         return $this->as;
     }
+
+    public function getColumnName(): string
+    {
+        return str_replace('.', '_', $this->getJoin()->getPathAs()).'_sub_fetch_key';
+    }
 }

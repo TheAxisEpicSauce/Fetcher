@@ -454,14 +454,17 @@ abstract class BaseFetcher implements Fetcher
     private function handleArray(array $fields): void
     {
         foreach ($fields as $field) {
-            if ($this->isParamField($field)) {
+            if ($this->isParamField($field))
+            {
                 $fullField = $field['param'];
                 [$fullField, $operator] = $this->separateOperator($fullField);
                 $success = $this->handleWhere($fullField, $operator, $field['value']);
 
                 if (!$success)
                     throw new Exception('Cannot find field '.$fullField);
-            } elseif ($this->isGroupField($field)) {
+            }
+            elseif ($this->isGroupField($field))
+            {
                 $repo = $field['type']===Conjunction::OR?self::buildOr():self::buildAnd();
                 $repo->handleArray($field['fields']);
                 $this->fieldGroup->addField($repo->fieldGroup);
@@ -469,7 +472,9 @@ abstract class BaseFetcher implements Fetcher
                 {
                     $this->joinsToMake[$joinToMake->getPathAs()] = $joinToMake;
                 }
-            }  elseif ($this->isSubField($field)) {
+            }
+            elseif ($this->isSubField($field))
+            {
                 $method = $field['method']?:'get';
                 $methodField = null;
                 if (str_contains($method, ':')) [$method, $methodField] = explode(':', $method);

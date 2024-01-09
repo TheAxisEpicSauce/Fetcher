@@ -73,11 +73,12 @@ abstract class MySqlFetcher extends BaseFetcher
             ), $e->getCode(), $e);
         }
 
-
-        if (count($this->subFetches) > 0) {
+        if (count($this->subFetches) > 0)
+        {
             $keyField = $this->key;
             $primaryKeys = array_map(fn ($item) => (int) $item[$keyField], $list);
-            if (count($primaryKeys) > 0) {
+            if (count($primaryKeys) > 0)
+            {
                 foreach ($this->subFetches as $name => [$field, $subFetch]) {
                     /** @var MySqlFetcher $subFetch */
                     $subFetch = $subFetch->where(sprintf('%s.%s', $this->table, $this->key), 'IN', $primaryKeys);
@@ -88,19 +89,17 @@ abstract class MySqlFetcher extends BaseFetcher
                     $subFetch->buildQuery();
                     $data = $subFetch->executeQuery();
                     foreach ($data as $item) {
-                        $keyVal = $item['copium'];
-                        unset($item['copium']);
+                        $keyVal = $item[$field->getColumnName()];
+                        unset($item[$field->getColumnName()]);
                         $subFetchedData[$name][$keyVal][] = $item;
                     }
                 }
 
                 foreach ($list as $index => $item)
                 {
-                    foreach ($this->subFetches as $name => $copium)
+                    foreach ($this->subFetches as $name => [$field, $subFetch])
                     {
                         $subData = $subFetchedData[$name];
-                        /** @var SubFetchField $field */
-                        $field = $subFetchFields[$name];
                         $hasKey = array_key_exists($item[$keyField], $subData);
 
                         $list[$index][$name] = match ($field->getMethod()) {
@@ -240,7 +239,8 @@ abstract class MySqlFetcher extends BaseFetcher
     private function getWhereString(array &$values = [])
     {
         $fieldToStringClosure = function (Field $field) use (&$fieldToStringClosure, &$values) {
-            if ($field instanceof ObjectField) {
+            if ($field instanceof ObjectField)
+            {
                 $join = $field->getJoin();
                 if ($join !== null) {
                     $table = $join->pathEndAs();
@@ -272,34 +272,42 @@ abstract class MySqlFetcher extends BaseFetcher
 
                     return sprintf('`%s`.`%s` %s %s', $table, $field->getField(), $field->getOperator(), $marks);
                 }
-            } elseif ($field instanceof GroupField) {
+            }
+            elseif ($field instanceof GroupField)
+            {
                 $fields = [];
                 foreach ($field->getFields() as $f) {
                     if ($f instanceof SubFetchField) $fieldToStringClosure($f);
                     else $fields[] = $fieldToStringClosure($f);
                 }
                 return '('.implode($field->getConjunction()===Conjunction::AND?' AND ':' OR ', $fields).')';
-            } elseif ($field instanceof SubFetchField) {
+            }
+            elseif ($field instanceof SubFetchField)
+            {
                 $fetcher = $field->getFetcher();
-                $fetcher->joinsToMake[] = $field->getJoin();
+                if (!array_key_exists($field->getJoin()->getPathAs(), $fetcher->joinsToMake))
+                {
+                    $fetcher->joinsToMake[$field->getJoin()->getPathAs()] = $field->getJoin();
+                }
 
                 $fieldGroup = new GroupField(Conjunction::AND, []);
                 if (!$field->getFetcher()->fieldGroup->isEmpty()) {
                     $fieldGroup->addField($field->getFetcher()->fieldGroup);
                 }
 
+
                 $fetcher->fieldGroup = $fieldGroup;
                 if ($field->getMethod() === 'count')
                 {
                     $fetcher->select = [
                         $field->getFetcher()->table.'.'.$field->getFetcher()->key,
-                        sprintf('`%s`.`%s` AS `copium`', $this->table, $this->key)
+                        sprintf('`%s`.`%s` AS `%s`', $this->table, $this->key, $field->getColumnName())
                     ];
                 }
                 else
                 {
                     $fetcher->select = $field->getFetcher()->select;
-                    $fetcher->select[] = sprintf('`%s`.`%s` AS `copium`', $this->table, $this->key);
+                    $fetcher->select[] = sprintf('`%s`.`%s` AS `%s`', $this->table, $this->key, $field->getColumnName());
                 }
 
                 $fetcher->groupByFields = [];
