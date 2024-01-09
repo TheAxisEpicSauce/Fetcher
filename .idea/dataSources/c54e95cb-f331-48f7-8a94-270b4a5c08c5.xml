@@ -710,7 +710,7 @@
       <Charset>utf8mb4</Charset>
     </collation>
     <schema id="224" parent="1" name="db_app">
-      <LastIntrospectionLocalTimestamp>2023-10-27.14:32:39</LastIntrospectionLocalTimestamp>
+      <Current>1</Current>
       <CollationName>latin1_swedish_ci</CollationName>
     </schema>
     <schema id="225" parent="1" name="information_schema">
@@ -739,81 +739,81 @@
       <Engine>InnoDB</Engine>
       <CollationName>latin1_swedish_ci</CollationName>
     </table>
-    <table id="234" parent="224" name="city">
+    <table id="234" parent="224" name="company">
       <Engine>InnoDB</Engine>
       <CollationName>latin1_swedish_ci</CollationName>
     </table>
-    <table id="235" parent="224" name="company">
+    <table id="235" parent="224" name="company_job">
       <Engine>InnoDB</Engine>
       <CollationName>latin1_swedish_ci</CollationName>
     </table>
-    <table id="236" parent="224" name="company_job">
+    <table id="236" parent="224" name="company_person">
       <Engine>InnoDB</Engine>
       <CollationName>latin1_swedish_ci</CollationName>
     </table>
-    <table id="237" parent="224" name="company_person">
+    <table id="237" parent="224" name="job">
       <Engine>InnoDB</Engine>
       <CollationName>latin1_swedish_ci</CollationName>
     </table>
-    <table id="238" parent="224" name="country">
+    <table id="238" parent="224" name="job_type">
       <Engine>InnoDB</Engine>
       <CollationName>latin1_swedish_ci</CollationName>
     </table>
-    <table id="239" parent="224" name="job">
+    <table id="239" parent="224" name="person">
       <Engine>InnoDB</Engine>
       <CollationName>latin1_swedish_ci</CollationName>
     </table>
-    <table id="240" parent="224" name="job_type">
+    <table id="240" parent="224" name="relation">
       <Engine>InnoDB</Engine>
       <CollationName>latin1_swedish_ci</CollationName>
     </table>
-    <table id="241" parent="224" name="person">
-      <Engine>InnoDB</Engine>
-      <CollationName>latin1_swedish_ci</CollationName>
-    </table>
-    <table id="242" parent="224" name="relation">
-      <Engine>InnoDB</Engine>
-      <CollationName>latin1_swedish_ci</CollationName>
-    </table>
-    <column id="243" parent="233" name="id">
+    <column id="241" parent="233" name="id">
       <DasType>int(11)|0s</DasType>
       <NotNull>1</NotNull>
       <Position>1</Position>
     </column>
-    <column id="244" parent="233" name="street">
+    <column id="242" parent="233" name="street">
       <DasType>varchar(255)|0s</DasType>
       <Position>2</Position>
     </column>
-    <column id="245" parent="233" name="number">
+    <column id="243" parent="233" name="number">
       <DasType>varchar(255)|0s</DasType>
       <Position>3</Position>
     </column>
-    <column id="246" parent="233" name="postcode">
+    <column id="244" parent="233" name="postcode">
       <DasType>varchar(255)|0s</DasType>
       <Position>4</Position>
     </column>
-    <index id="247" parent="233" name="PRIMARY">
+    <index id="245" parent="233" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <key id="248" parent="233" name="PRIMARY">
+    <key id="246" parent="233" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <column id="249" parent="234" name="id">
+    <column id="247" parent="234" name="id">
       <DasType>int(11)|0s</DasType>
       <NotNull>1</NotNull>
       <Position>1</Position>
     </column>
-    <column id="250" parent="234" name="country_code">
+    <column id="248" parent="234" name="name">
       <DasType>varchar(255)|0s</DasType>
       <Position>2</Position>
     </column>
-    <column id="251" parent="234" name="name">
+    <column id="249" parent="234" name="description">
       <DasType>varchar(255)|0s</DasType>
       <Position>3</Position>
+    </column>
+    <column id="250" parent="234" name="employee_count">
+      <DasType>int(10) unsigned|0s</DasType>
+      <Position>4</Position>
+    </column>
+    <column id="251" parent="234" name="boss_id">
+      <DasType>int(11)|0s</DasType>
+      <Position>5</Position>
     </column>
     <index id="252" parent="234" name="PRIMARY">
       <ColNames>id</ColNames>
@@ -825,212 +825,162 @@
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <column id="254" parent="235" name="id">
+    <column id="254" parent="235" name="company_id">
       <DasType>int(11)|0s</DasType>
       <NotNull>1</NotNull>
       <Position>1</Position>
     </column>
-    <column id="255" parent="235" name="name">
-      <DasType>varchar(255)|0s</DasType>
-      <Position>2</Position>
-    </column>
-    <column id="256" parent="235" name="description">
-      <DasType>varchar(255)|0s</DasType>
-      <Position>3</Position>
-    </column>
-    <column id="257" parent="235" name="employee_count">
-      <DasType>int(10) unsigned|0s</DasType>
-      <Position>4</Position>
-    </column>
-    <column id="258" parent="235" name="boss_id">
-      <DasType>int(11)|0s</DasType>
-      <Position>5</Position>
-    </column>
-    <index id="259" parent="235" name="PRIMARY">
-      <ColNames>id</ColNames>
-      <Type>btree</Type>
-      <Unique>1</Unique>
-    </index>
-    <key id="260" parent="235" name="PRIMARY">
-      <NameSurrogate>1</NameSurrogate>
-      <Primary>1</Primary>
-      <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
-    </key>
-    <column id="261" parent="236" name="company_id">
-      <DasType>int(11)|0s</DasType>
-      <NotNull>1</NotNull>
-      <Position>1</Position>
-    </column>
-    <column id="262" parent="236" name="job_id">
+    <column id="255" parent="235" name="job_id">
       <DasType>int(11)|0s</DasType>
       <NotNull>1</NotNull>
       <Position>2</Position>
     </column>
-    <index id="263" parent="236" name="PRIMARY">
+    <index id="256" parent="235" name="PRIMARY">
       <ColNames>company_id
 job_id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <key id="264" parent="236" name="PRIMARY">
+    <key id="257" parent="235" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <column id="265" parent="237" name="company_id">
+    <column id="258" parent="236" name="company_id">
       <DasType>int(11)|0s</DasType>
       <NotNull>1</NotNull>
       <Position>1</Position>
     </column>
-    <column id="266" parent="237" name="person_id">
+    <column id="259" parent="236" name="person_id">
       <DasType>int(11)|0s</DasType>
       <NotNull>1</NotNull>
       <Position>2</Position>
     </column>
-    <index id="267" parent="237" name="PRIMARY">
+    <index id="260" parent="236" name="PRIMARY">
       <ColNames>company_id
 person_id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <key id="268" parent="237" name="PRIMARY">
+    <key id="261" parent="236" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <column id="269" parent="238" name="code">
-      <DasType>varchar(255)|0s</DasType>
-      <NotNull>1</NotNull>
-      <Position>1</Position>
-    </column>
-    <column id="270" parent="238" name="name">
-      <DasType>varchar(255)|0s</DasType>
-      <Position>2</Position>
-    </column>
-    <index id="271" parent="238" name="PRIMARY">
-      <ColNames>code</ColNames>
-      <Type>btree</Type>
-      <Unique>1</Unique>
-    </index>
-    <key id="272" parent="238" name="PRIMARY">
-      <NameSurrogate>1</NameSurrogate>
-      <Primary>1</Primary>
-      <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
-    </key>
-    <column id="273" parent="239" name="id">
+    <column id="262" parent="237" name="id">
       <DasType>int(11)|0s</DasType>
       <NotNull>1</NotNull>
       <Position>1</Position>
     </column>
-    <column id="274" parent="239" name="job_type_id">
+    <column id="263" parent="237" name="job_type_id">
       <DasType>int(11)|0s</DasType>
       <Position>2</Position>
     </column>
-    <column id="275" parent="239" name="name">
+    <column id="264" parent="237" name="name">
       <DasType>varchar(255)|0s</DasType>
       <Position>3</Position>
     </column>
-    <column id="276" parent="239" name="salary">
-      <DasType>decimal(8,2 digit)|0s</DasType>
+    <column id="265" parent="237" name="salary">
+      <DasType>varchar(255)|0s</DasType>
       <Position>4</Position>
     </column>
-    <column id="277" parent="239" name="address_id">
+    <column id="266" parent="237" name="address_id">
       <DasType>int(11)|0s</DasType>
       <Position>5</Position>
     </column>
-    <column id="278" parent="239" name="company_id">
+    <column id="267" parent="237" name="company_id">
       <DasType>int(11)|0s</DasType>
       <Position>6</Position>
     </column>
-    <index id="279" parent="239" name="PRIMARY">
+    <index id="268" parent="237" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <key id="280" parent="239" name="PRIMARY">
+    <key id="269" parent="237" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <column id="281" parent="240" name="id">
+    <column id="270" parent="238" name="id">
       <DasType>int(11)|0s</DasType>
       <NotNull>1</NotNull>
       <Position>1</Position>
     </column>
-    <column id="282" parent="240" name="name">
+    <column id="271" parent="238" name="name">
       <DasType>varchar(255)|0s</DasType>
       <Position>2</Position>
     </column>
-    <column id="283" parent="240" name="description">
+    <column id="272" parent="238" name="description">
       <DasType>varchar(255)|0s</DasType>
       <Position>3</Position>
     </column>
-    <index id="284" parent="240" name="PRIMARY">
+    <index id="273" parent="238" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <key id="285" parent="240" name="PRIMARY">
+    <key id="274" parent="238" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <column id="286" parent="241" name="id">
+    <column id="275" parent="239" name="id">
       <DasType>int(11)|0s</DasType>
       <NotNull>1</NotNull>
       <Position>1</Position>
     </column>
-    <column id="287" parent="241" name="first_name">
+    <column id="276" parent="239" name="first_name">
       <DasType>varchar(255)|0s</DasType>
       <Position>2</Position>
     </column>
-    <column id="288" parent="241" name="last_name">
+    <column id="277" parent="239" name="last_name">
       <DasType>varchar(255)|0s</DasType>
       <Position>3</Position>
     </column>
-    <column id="289" parent="241" name="date_of_birth">
+    <column id="278" parent="239" name="date_of_birth">
       <DasType>date|0s</DasType>
       <Position>4</Position>
     </column>
-    <column id="290" parent="241" name="address_id">
+    <column id="279" parent="239" name="address_id">
       <DasType>varchar(255)|0s</DasType>
       <Position>5</Position>
     </column>
-    <column id="291" parent="241" name="job_id">
+    <column id="280" parent="239" name="job_id">
       <DasType>varchar(255)|0s</DasType>
       <Position>6</Position>
     </column>
-    <index id="292" parent="241" name="PRIMARY">
+    <index id="281" parent="239" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <key id="293" parent="241" name="PRIMARY">
+    <key id="282" parent="239" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <column id="294" parent="242" name="passenger_a_id">
+    <column id="283" parent="240" name="passenger_a_id">
       <DasType>varchar(255)|0s</DasType>
       <NotNull>1</NotNull>
       <Position>1</Position>
     </column>
-    <column id="295" parent="242" name="type">
+    <column id="284" parent="240" name="type">
       <DasType>varchar(255)|0s</DasType>
       <Position>2</Position>
     </column>
-    <column id="296" parent="242" name="passenger_b_id">
+    <column id="285" parent="240" name="passenger_b_id">
       <DasType>varchar(255)|0s</DasType>
       <NotNull>1</NotNull>
       <Position>3</Position>
     </column>
-    <index id="297" parent="242" name="PRIMARY">
+    <index id="286" parent="240" name="PRIMARY">
       <ColNames>passenger_a_id
 passenger_b_id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <key id="298" parent="242" name="PRIMARY">
+    <key id="287" parent="240" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>

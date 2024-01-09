@@ -465,7 +465,10 @@ abstract class BaseFetcher implements Fetcher
                 $repo = $field['type']===Conjunction::OR?self::buildOr():self::buildAnd();
                 $repo->handleArray($field['fields']);
                 $this->fieldGroup->addField($repo->fieldGroup);
-                $this->joinsToMake = array_merge($this->joinsToMake, $repo->joinsToMake);
+                foreach ($repo->joinsToMake as $joinToMake)
+                {
+                    $this->joinsToMake[$joinToMake->getPathAs()] = $joinToMake;
+                }
             }  elseif ($this->isSubField($field)) {
                 $method = $field['method']?:'get';
                 $methodField = null;
