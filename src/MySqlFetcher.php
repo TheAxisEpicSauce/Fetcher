@@ -179,6 +179,7 @@ abstract class MySqlFetcher extends BaseFetcher
                             $originalTable = $matches[1];
                         }
 
+                        $tableTo = str_replace('`', '', $tableTo);
                         $asPart = $tableTo;
 
                         $tableAs = $joinToMake->getTableAs($tableTo);
