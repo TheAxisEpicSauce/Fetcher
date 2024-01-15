@@ -737,6 +737,20 @@ class MySqlFetcherTest extends TestCase
             "address_city_name" => "Hoofddorp"
         ], $data);
     }
+
+    public function testTwoDeepAs()
+    {
+        $q = PersonFetcher::build()
+            ->select(['id', 'address.country.code AS country_code']);
+
+        $data = $q->first();
+
+        $this->assertEquals([
+            "id" => "1",
+            "country_code" => "NL"
+        ], $data);
+
+    }
 }
 
 

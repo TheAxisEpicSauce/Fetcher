@@ -805,10 +805,11 @@ abstract class BaseFetcher implements Fetcher
             }
 
             $tableAs = $table;
+
             if ($join)
             {
                 $tableAs = $join->getTableAs($table);
-                if ($tableAs !== $table)
+                if ($tableAs !== $table && $as === null)
                 {
                     $as = $tableAs.'_'.$field;
                 }
