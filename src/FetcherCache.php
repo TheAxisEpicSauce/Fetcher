@@ -89,6 +89,10 @@ class FetcherCache
         $content = file_get_contents(self::$CachePath);
 
         self::$cache = json_decode($content, true);
+        if (empty(self::$cache))
+        {
+            self::CacheFetchers();
+        }
         return true;
     }
 
