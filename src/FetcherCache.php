@@ -12,7 +12,7 @@ class FetcherCache
     private static string $FetcherDir = '';
     private static string $Namespace = '';
     private static ?FetcherCache $_instance = null;
-    private static array $cache;
+    private static ?array $cache = null;
     private static int $graphDepth = 5;
 
     private array $fieldPrefixes = [
@@ -86,6 +86,7 @@ class FetcherCache
 
     public function loadCache(): bool
     {
+        if (self::$cache !== null) return true;
         $content = file_get_contents(self::$CachePath);
 
         self::$cache = json_decode($content, true);
