@@ -2,8 +2,8 @@
 
 namespace Fetcher;
 
-use Composer\Autoload\ClassLoader;
 use Fetcher\Field\Operator;
+use Redis;
 
 class FetcherCache
 {
@@ -14,6 +14,9 @@ class FetcherCache
     private static ?FetcherCache $_instance = null;
     private static ?array $cache = null;
     private static int $graphDepth = 5;
+
+    private static bool $UseRedis = false;
+    private static ?Redis $Redis = null;
 
     private array $fieldPrefixes = [
         '' => Operator::EQUALS,
@@ -61,6 +64,17 @@ class FetcherCache
         self::$CachePath = $cachePath;
         self::$FetcherDir = $fetcherDir;
         self::$Namespace = $namespace;
+    }
+
+    public static function SetupRedis(string $redisHost, string $redisCredentials)
+    {
+        static::$Redis = $redis = new Redis();
+        $redis->connect($redisHost);
+        $redis->auth($redisCredentials);
+
+        $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_JSON);
+
+        static::$UseRedis = true;
     }
 
     public static function Instance(BaseFetcher $fetcher): FetcherCache
@@ -143,24 +157,33 @@ class FetcherCache
 
             $graphs[$fetcherId] = $graph;
         }
-//
-//        foreach ($objects as $index => $object) {
-//            $joins = $object->getJoins();
-//            $graph[$index] = [];
-//            foreach ($joins as $join => $class) {
-//                $graph[$index][$join] = $fetcherIds[$class];
-//            }
-//
-//            $prefixes[$index] = '/( |^)('.implode("|", array_keys($this->fieldPrefixes)).')('.implode("|", array_keys($object->getFields())).')( |$)/';
-//            $suffixes[$index] = '/( |^)('.implode("|", array_keys($object->getFields())).')('.implode("|", array_keys($this->fieldSuffixes)).')( |$)/';
-//        }
 
         self::$cache = [
             'keys' => $keys,
             'fetchers' => $fetchers,
             'fetcher_ids' => $fetcherIds,
-            'graph' => $graphs
+            'graphs' => $graphs
         ];
+
+        if (self::$UseRedis)
+        {
+            foreach ($keys as $fetcherId => $key)
+            {
+                self::$Redis->hSet('keys', $fetcherId, $key);
+            }
+            foreach ($fetchers as $fetcherId => $fetcherClass)
+            {
+                self::$Redis->hSet('fetchers', $fetcherId, $fetcherClass);
+            }
+            foreach ($fetcherIds as $fetcherClass => $fetcherId)
+            {
+                self::$Redis->hSet('fetcher_ids', $fetcherClass, $fetcherId);
+            }
+            foreach ($graphs as $fetcherId => $graph)
+            {
+                self::$Redis->hSet('graphs', $fetcherId, $graph);
+            }
+        }
 
         file_put_contents(self::$CachePath, json_encode(self::$cache));
 
@@ -194,77 +217,41 @@ class FetcherCache
     //-------------------------------------------
     public function getFetcherKey(int $id)
     {
+        if (self::$UseRedis)
+            return self::$Redis->hGet('keys', $id);
         return self::$cache['keys'][$id];
     }
 
     public function getFetchers()
     {
+        if (self::$UseRedis)
+            return self::$Redis->hGetAll('fetchers');
         return self::$cache['fetchers'];
     }
 
     public function getFetcher(int $id)
     {
+        if (self::$UseRedis)
+            return self::$Redis->hGet('fetchers', $id);
         return self::$cache['fetchers'][$id];
     }
 
     public function getFetcherClass(string $tableFrom, string $tableTo): string
     {
-        return self::$cache['graph'][$this->fetcherId][$tableFrom][$tableTo];
+        return $this->getGraph()[$tableFrom][$tableTo];
     }
 
     public function getFetcherIds()
     {
+        if (self::$UseRedis)
+            return self::$Redis->hGetAll('fetcher_ids');
         return self::$cache['fetcher_ids'];
-    }
-
-    public function getTables()
-    {
-        return self::$cache['tables'];
-    }
-
-    public function getTable(int $id)
-    {
-        return self::$cache['tables'][$id];
-    }
-
-    public function getTableIds()
-    {
-        return self::$cache['table_ids'];
-    }
-
-    public function getTableId(string $table, ?int $fromId = null)
-    {
-        if ($fromId)
-        {
-            if (!array_key_exists($table, self::$cache['graph'][$fromId])) return null;
-            return self::$cache['graph'][$fromId][$table];
-        }
-        if (!array_key_exists($table, self::$cache['table_ids'])) return null;
-        return self::$cache['table_ids'][$table];
-    }
-
-    public function getPrefixes()
-    {
-        return self::$cache['prefixes'];
-    }
-
-    public function getPrefix(int $fetcherId)
-    {
-        return self::$cache['prefixes'][$fetcherId];
-    }
-
-    public function getSuffixes()
-    {
-        return self::$cache['suffixes'];
-    }
-
-    public function getSuffix(int $fetcherId)
-    {
-        return self::$cache['suffixes'][$fetcherId];
     }
 
     public function getGraph()
     {
-        return self::$cache['graph'][$this->fetcherId];
+        if (self::$UseRedis)
+            return self::$Redis->hGet('graphs', $this->fetcherId);
+        return self::$cache['graphs'][$this->fetcherId];
     }
 }

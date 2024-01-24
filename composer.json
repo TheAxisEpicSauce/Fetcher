@@ -14,7 +14,8 @@
     "require": {
         "ext-pdo": "*",
         "ext-ctype": "*",
-        "mongodb/mongodb": "^1.9"
+        "mongodb/mongodb": "^1.9",
+        "ext-redis": "*"
     },
     "autoload": {
         "psr-4": {
