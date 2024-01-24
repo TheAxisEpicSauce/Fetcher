@@ -100,6 +100,7 @@ class FetcherCache
 
     public function loadCache(): bool
     {
+        if (self::$UseRedis) return true;
         if (self::$cache !== null) return true;
         $content = file_get_contents(self::$CachePath);
 
