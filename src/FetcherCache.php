@@ -81,7 +81,7 @@ class FetcherCache
     {
         $instance = self::Init();
         $instance->fetcher = $fetcher::class;
-        $instance->fetcherId = self::$cache['fetcher_ids'][$fetcher::class];
+        $instance->fetcherId = $instance->getFetcherId($fetcher::class);
         $instance::$_instance = $instance;
         return $instance;
     }
@@ -247,6 +247,13 @@ class FetcherCache
         if (self::$UseRedis)
             return self::$Redis->hGetAll('fetcher_ids');
         return self::$cache['fetcher_ids'];
+    }
+
+    public function getFetcherId(string $fetcherClass)
+    {
+        if (self::$UseRedis)
+            return self::$Redis->hGet('fetcher_ids', $fetcherClass);
+        return self::$cache['fetcher_ids'][$fetcherClass];
     }
 
     public function getGraph()
