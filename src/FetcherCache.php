@@ -68,6 +68,8 @@ class FetcherCache
 
     public static function SetupRedis(string $redisHost, string $redisCredentials)
     {
+        if (!extension_loaded('redis')) return;
+
         static::$Redis = $redis = new Redis();
         $redis->connect($redisHost);
         $redis->auth($redisCredentials);
