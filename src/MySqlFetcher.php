@@ -70,7 +70,7 @@ abstract class MySqlFetcher extends BaseFetcher
         {
             throw new Exception(sprintf(
                 "failed to execute query %s", $this->queryString
-            ), $e->getCode(), $e);
+            ), (int) $e->getCode(), $e);
         }
 
         if (count($this->subFetches) > 0)
