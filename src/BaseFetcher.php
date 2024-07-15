@@ -11,6 +11,7 @@ namespace Fetcher;
 use BadMethodCallException;
 use Closure;
 use Exception;
+use Fetcher\Exception\FetcherException;
 use Fetcher\Exception\MaxSearchException;
 use Fetcher\Field\Graph;
 use Fetcher\Field\Operator;
@@ -214,13 +215,22 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     private function getTablePath(string $tableFrom, string $tableTo): ?array
     {
-        $graph = new Graph($this->cache->getGraph());
-        $tablePath = $graph->breadthFirstSearch($tableFrom, $tableTo);
+        $tablePath = null;
+        if (is_array($this->cache->getGraph()))
+        {
+            $graph = new Graph($this->cache->getGraph());
+            $tablePath = $graph->breadthFirstSearch($tableFrom, $tableTo);
+        }
         if ($tablePath === null)
         {
-            dd($tableFrom, $tableTo, $this->cache->getGraph());
+            throw new FetcherException(sprintf(
+                'Fetcher found no path from %s to %s, %s',
+                $tableFrom,
+                $tableTo,
+                is_array($this->cache->getGraph())?'No path':'Empty graph'
+            ));
         }
-        if ($tablePath === null) return null;
+//        if ($tablePath === null) return null;
         if (self::getMaxSearchDepth() !== null && (count($tablePath) - 1) > self::getMaxSearchDepth())
         {
             throw new MaxSearchException($tablePath);
