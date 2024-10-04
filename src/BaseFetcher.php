@@ -922,7 +922,7 @@ abstract class BaseFetcher implements Fetcher
 
     public function addJoinAs(string $table, string $as, ?string $filter): static
     {
-        self::$joinsAs[$as] = [
+        self::$joinsAs[$table] = [
             'table' => $table,
             'as' => $as,
             'filter' => $filter
