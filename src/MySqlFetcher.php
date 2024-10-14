@@ -11,6 +11,7 @@ namespace Fetcher;
 use Exception;
 use Fetcher\Field\Field;
 use Fetcher\Field\Conjunction;
+use Fetcher\Field\FieldType;
 use Fetcher\Field\GroupField;
 use Fetcher\Field\ObjectField;
 use Fetcher\Field\Operator;
@@ -76,7 +77,14 @@ abstract class MySqlFetcher extends BaseFetcher
         if (count($this->subFetches) > 0)
         {
             $keyField = $this->key;
-            $primaryKeys = array_map(fn ($item) => (int) $item[$keyField], $list);
+            $keyType = $this->getFields()[$this->key];
+
+            if ($keyType === FieldType::INT) {
+                $primaryKeys = array_map(fn ($item) => (int) $item[$keyField], $list);
+            } else {
+                $primaryKeys = array_map(fn ($item) => $item[$keyField], $list);
+            }
+
             if (count($primaryKeys) > 0)
             {
                 foreach ($this->subFetches as $name => [$field, $subFetch]) {
