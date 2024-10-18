@@ -412,7 +412,8 @@ abstract class BaseFetcher implements Fetcher
             $fetcherClass = $this->cache->getFetcherClass($tableFrom, $joinName);
             $tableTo = $fetcherClass::getTable();
 
-            $join->addLink($tableFrom, $tableTo, $joinName, $fetcherClass);
+            $join->addLink($tableFrom, $tableTo, $joinName);
+            $join->setEndFetcherClass($fetcherClass);
             $tableFrom = $tableTo;
         }
 
@@ -943,13 +944,6 @@ abstract class BaseFetcher implements Fetcher
     #endregion
 
     #region String Helpers
-    protected function studly($value): array|string
-    {
-        $value = ucwords(str_replace(['-', '_'], ' ', $value));
-
-        return str_replace(' ', '', $value);
-    }
-
     protected function snake($value)
     {
         if (! ctype_lower($value)) {

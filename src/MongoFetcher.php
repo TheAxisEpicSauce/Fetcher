@@ -13,6 +13,7 @@ use Fetcher\Field\Conjunction;
 use Fetcher\Field\GroupField;
 use Fetcher\Field\ObjectField;
 use Fetcher\Field\Operator;
+use Fetcher\Helper\Str;
 use Fetcher\Join\Join;
 use MongoDB\Client;
 use MongoDB\Collection;
@@ -79,7 +80,7 @@ abstract class MongoFetcher extends BaseFetcher
                 }
 
 
-                $joinMethod = 'join'.$this->studly($tableTo);
+                $joinMethod = 'join'.Str::studly($tableTo);
 
                 if (!method_exists($fetcher, $joinMethod)) {
                     $this->addBuildError(sprintf('%s misses join method %s', $fetcher->getName(), $joinMethod));

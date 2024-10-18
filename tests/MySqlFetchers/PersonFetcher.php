@@ -17,7 +17,8 @@ class PersonFetcher extends MySqlFetcher
             'last_name' => FieldType::STRING,
             'date_of_birth' => FieldType::DATE,
             'address_id' => FieldType::INT,
-            'job_id' => FieldType::INT
+            'job_id' => FieldType::INT,
+            'referrer_id' => FieldType::INT
         ];
     }
 
@@ -29,7 +30,8 @@ class PersonFetcher extends MySqlFetcher
             'address_double' => AddressFetcher::class,
             'job' => JobFetcher::class,
             'company' => CompanyFetcher::class,
-            'owned_company' => CompanyFetcher::class
+            'owned_company' => CompanyFetcher::class,
+            'referrer' => PersonFetcher::class
         ];
     }
 
@@ -64,5 +66,10 @@ class PersonFetcher extends MySqlFetcher
     public function joinOwnedCompany()
     {
         return 'company AS owned_company ON owned_company.boss_id = person.id';
+    }
+
+    public function joinReferrer()
+    {
+        return '`person` AS `referrer` ON `referrer`.`id` = `person`.`referrer_id`';
     }
 }

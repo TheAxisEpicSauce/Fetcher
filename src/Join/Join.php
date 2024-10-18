@@ -8,6 +8,8 @@
 namespace Fetcher\Join;
 
 
+use Fetcher\Helper\Str;
+
 class Join
 {
     private string $path;
@@ -31,18 +33,30 @@ class Join
         $this->links = [];
     }
 
-    public function addLink(string $tableFrom, string $tableTo, string $joinName, string $fetcherClass)
+    /**
+     * @return array|JoinLink[]
+     */
+    public function getLinks(): array
+    {
+        return $this->links;
+    }
+
+    public function addLink(string $tableFrom, string $tableTo, string $joinName)
     {
         $link = new JoinLink($tableFrom, $tableTo, $joinName);
         $linkB = array_key_exists($tableFrom, $this->links)?$this->links[$tableFrom]:null;
         $link->prev = $linkB;
         if ($linkB) $linkB->next = $link;
         $this->links[$tableTo] = $link;
-        $this->fetcherClass = $fetcherClass;
 
         $this->addTableMapping($tableTo, $joinName);
 
         $this->generatePath();
+    }
+
+    public function setEndFetcherClass(string $fetcherClass)
+    {
+        $this->fetcherClass = $fetcherClass;
     }
 
     private function generatePath()
@@ -194,6 +208,12 @@ class JoinLink
     public function getJoinName(): string
     {
         return $this->joinName;
+    }
+
+
+    public function getJoinMethod(): string
+    {
+        return 'join'.Str::studly($this->joinName);
     }
 }
 
