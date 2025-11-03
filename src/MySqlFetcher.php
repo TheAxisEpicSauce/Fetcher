@@ -22,15 +22,17 @@ use PDO;
 abstract class MySqlFetcher extends BaseFetcher
 {
     static mixed $connection = null;
+    static ?\Closure $postExecutionCallback = null;
 
     /**
      * @param PDO $connection
      * @throws Exception
      */
-    public static function setConnection($connection): void
+    public static function setConnection($connection, ?\Closure $postExecutionCall = null): void
     {
         if (!$connection instanceof PDO) throw new Exception('invalid connection type');
         static::$connection = $connection;
+        static::$postExecutionCallback = $postExecutionCall;
     }
 
     protected function buildQuery()
@@ -62,10 +64,17 @@ abstract class MySqlFetcher extends BaseFetcher
 
         try
         {
+            $start = microtime(true); // Start timing
+
             $stmt = static::$connection->prepare($this->queryString);
             $stmt->execute($this->queryValues);
 
             $list = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $time = (microtime(true) - $start) * 1000;
+            if (static::$postExecutionCallback !== null) {
+                call_user_func(static::$postExecutionCallback, $this->queryString, $this->queryValues, $time);
+            }
         }
         catch (Exception $e)
         {
