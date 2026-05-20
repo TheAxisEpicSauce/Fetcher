@@ -170,22 +170,27 @@ class FetcherCache
 
         if (self::$UseRedis)
         {
+            $tx = self::$Redis->multi();
+            $tx->del('keys', 'fetchers', 'fetcher_ids', 'graphs');
+
             foreach ($keys as $fetcherId => $key)
             {
-                self::$Redis->hSet('keys', $fetcherId, $key);
+                $tx->hSet('keys', $fetcherId, $key);
             }
             foreach ($fetchers as $fetcherId => $fetcherClass)
             {
-                self::$Redis->hSet('fetchers', $fetcherId, $fetcherClass);
+                $tx->hSet('fetchers', $fetcherId, $fetcherClass);
             }
             foreach ($fetcherIds as $fetcherClass => $fetcherId)
             {
-                self::$Redis->hSet('fetcher_ids', $fetcherClass, $fetcherId);
+                $tx->hSet('fetcher_ids', $fetcherClass, $fetcherId);
             }
             foreach ($graphs as $fetcherId => $graph)
             {
-                self::$Redis->hSet('graphs', $fetcherId, $graph);
+                $tx->hSet('graphs', $fetcherId, $graph);
             }
+
+            $tx->exec();
         }
 
         file_put_contents(self::$CachePath, json_encode(self::$cache));
