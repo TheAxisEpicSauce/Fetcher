@@ -1,0 +1,14 @@
+{
+  "name": "fetcher",
+  "version": "1.0.1",
+  "description": "it fetches stuff :D",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
