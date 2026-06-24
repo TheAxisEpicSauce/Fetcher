@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.0.1](https://github.com/TheAxisEpicSauce/Fetcher/branches/compare/v2.0.0%0Dv2.0.1) (2026-06-24)
+
+
+### Bug Fixes
+
+* sub fetcher cache issue ([fca74db](https://github.com/TheAxisEpicSauce/Fetcher/commits/fca74dbbec251236e953f38c698bc766f67b0bb7))
+
 ## [2.0.0](https://github.com/TheAxisEpicSauce/Fetcher/branches/compare/v1.0.2%0Dv2.0.0) (2026-06-24)
 
 
