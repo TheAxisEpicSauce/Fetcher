@@ -1,2 +1,5 @@
 # Default ignored files
 /workspace.xml
+/laravel-idea.xml
+/dataSources.xml
+/dataSources.local.xml
