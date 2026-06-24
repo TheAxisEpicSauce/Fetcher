@@ -5,9 +5,9 @@ STANDARD_VERSION_ARGS := --commitUrlFormat "{{host}}/{{owner}}/{{repository}}/co
 test-setup:
 	docker compose up -d mysql mongodb
 	@echo "Waiting for MySQL to be ready..."
-	@until docker exec mysql mysqladmin ping -u root -pp0epsteen --silent 2>/dev/null; do sleep 1; done
-	docker exec -i mysql mysql -u root -pp0epsteen -e "DROP DATABASE IF EXISTS db_app; CREATE DATABASE db_app;"
-	docker exec -i mysql mysql -u root -pp0epsteen db_app < tests/data/mysql.sql
+	@until docker exec fetcher-mysql mysqladmin ping -u root -pp0epsteen --silent 2>/dev/null; do sleep 1; done
+	docker exec -i fetcher-mysql mysql -u root -pp0epsteen -e "DROP DATABASE IF EXISTS db_app; CREATE DATABASE db_app;"
+	docker exec -i fetcher-mysql mysql -u root -pp0epsteen db_app < tests/data/mysql.sql
 
 test: test-setup
 	docker compose run --rm phpunit tests

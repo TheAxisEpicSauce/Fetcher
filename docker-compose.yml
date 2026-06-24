@@ -1,5 +1,4 @@
 # docker-compose.yml
-version: '3'
 services:
   composer:
     image: composer:latest
@@ -11,7 +10,7 @@ services:
     build:
       context: .
       dockerfile: php.dockerfile
-    container_name: php
+    container_name: fetcher-php
     volumes:
       - .:/app
     working_dir: /app
@@ -23,7 +22,7 @@ services:
     build:
       context: .
       dockerfile: php.dockerfile
-    container_name: phpunit
+    container_name: fetcher-phpunit
     volumes:
       - .:/app
     working_dir: /app
@@ -31,20 +30,20 @@ services:
 
   mysql:
     image: mysql:5.7.29
-    container_name: mysql
+    container_name: fetcher-mysql
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: db_app
       MYSQL_ROOT_PASSWORD: p0epsteen
     ports:
-      - 3306:3306
+      - 3307:3306
 
   mongodb:
-    image : mongo
-    container_name: mongodb
+    image: mongo
+    container_name: fetcher-mongodb
     restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: p0epsteen
     ports:
-      - 27017:27017
+      - 27018:27017

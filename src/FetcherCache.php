@@ -58,7 +58,7 @@ class FetcherCache
             self::$_instance->loadCache();
         }
 
-        $instance = self::$_instance;
+        $instance = clone self::$_instance;
         $instance->fetcher = $fetcher::class;
         $instance->fetcherId = $instance->getFetcherId($fetcher::class);
         return $instance;
@@ -218,7 +218,15 @@ class FetcherCache
 
     public function getFetcherClass(string $tableFrom, string $tableTo): string
     {
-        return $this->getGraph()[$tableFrom][$tableTo];
+        $graph = $this->getGraph();
+        if (!isset($graph[$tableFrom][$tableTo])) {
+            $available = isset($graph[$tableFrom]) ? implode(', ', array_keys($graph[$tableFrom])) : '(table not in graph)';
+            throw new \RuntimeException(sprintf(
+                'FetcherCache: no join from "%s" to "%s" in graph for fetcher %s. Available joins from "%s": [%s]',
+                $tableFrom, $tableTo, $this->fetcher ?? 'unknown', $tableFrom, $available
+            ));
+        }
+        return $graph[$tableFrom][$tableTo];
     }
 
     public function getFetcherIds()
