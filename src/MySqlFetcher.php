@@ -22,17 +22,44 @@ use PDO;
 abstract class MySqlFetcher extends BaseFetcher
 {
     static mixed $connection = null;
+    static ?\Closure $connectionFactory = null;
     static ?\Closure $postExecutionCallback = null;
 
     /**
-     * @param PDO $connection
+     * @param PDO|\Closure $connection PDO instance or closure that returns one
      * @throws Exception
      */
     public static function setConnection($connection, ?\Closure $postExecutionCall = null): void
     {
-        if (!$connection instanceof PDO) throw new Exception('invalid connection type');
-        static::$connection = $connection;
+        if ($connection instanceof \Closure) {
+            static::$connectionFactory = $connection;
+            static::$connection = null;
+        } elseif ($connection instanceof PDO) {
+            static::$connection = $connection;
+            static::$connectionFactory = null;
+        } else {
+            throw new Exception('invalid connection type');
+        }
         static::$postExecutionCallback = $postExecutionCall;
+    }
+
+    protected static function resolveConnection(): PDO
+    {
+        if (static::$connection !== null) {
+            try {
+                static::$connection->query('SELECT 1');
+                return static::$connection;
+            } catch (\Throwable) {
+                static::$connection = null;
+            }
+        }
+
+        if (static::$connectionFactory !== null) {
+            static::$connection = (static::$connectionFactory)();
+            return static::$connection;
+        }
+
+        throw new Exception('Connection not set');
     }
 
     protected function buildQuery()
@@ -66,7 +93,8 @@ abstract class MySqlFetcher extends BaseFetcher
         {
             $start = microtime(true); // Start timing
 
-            $stmt = static::$connection->prepare($this->queryString);
+            $connection = static::resolveConnection();
+            $stmt = $connection->prepare($this->queryString);
             $stmt->execute($this->queryValues);
 
             $list = $stmt->fetchAll(PDO::FETCH_ASSOC);

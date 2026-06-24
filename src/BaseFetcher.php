@@ -30,6 +30,7 @@ use http\Message;
 abstract class BaseFetcher implements Fetcher
 {
     static mixed $connection = null;
+    static ?\Closure $connectionFactory = null;
     private ?FetcherCache $cache = null;
 
     private array $fieldPrefixes = [

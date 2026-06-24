@@ -22,6 +22,7 @@ use MongoDB\Model\BSONDocument;
 abstract class MongoFetcher extends BaseFetcher
 {
     static mixed $connection = null;
+    static ?\Closure $connectionFactory = null;
 
     private $operators = [
         Operator::EQUALS => '$eq',
@@ -33,11 +34,39 @@ abstract class MongoFetcher extends BaseFetcher
     ];
 
 
+    /**
+     * @param Database|\Closure $connection Database instance or closure that returns one
+     */
     public static function setConnection($connection): void
     {
-        if (!$connection instanceof Database) throw new \Exception('invalid connection type');
+        if ($connection instanceof \Closure) {
+            static::$connectionFactory = $connection;
+            static::$connection = null;
+        } elseif ($connection instanceof Database) {
+            static::$connection = $connection;
+            static::$connectionFactory = null;
+        } else {
+            throw new \Exception('invalid connection type');
+        }
+    }
 
-        static::$connection = $connection;
+    protected static function resolveConnection(): Database
+    {
+        if (static::$connection !== null) {
+            try {
+                static::$connection->command(['ping' => 1]);
+                return static::$connection;
+            } catch (\Throwable) {
+                static::$connection = null;
+            }
+        }
+
+        if (static::$connectionFactory !== null) {
+            static::$connection = (static::$connectionFactory)();
+            return static::$connection;
+        }
+
+        throw new \Exception('Connection not set');
     }
 
     private $lookup = null;
@@ -155,10 +184,10 @@ abstract class MongoFetcher extends BaseFetcher
 
     protected function executeQuery(): array
     {
-        if (static::$connection === null) throw new Exception('Connection not set');
+        $connection = static::resolveConnection();
 
         /** @var Collection $collection */
-        $collection = static::$connection->{$this->table};
+        $collection = $connection->{$this->table};
 
 
         $aggregate = [];
