@@ -102,17 +102,13 @@ abstract class MongoFetcher extends BaseFetcher
             foreach ($tables as $tableTo) {
                 $tableToAs = $join->getTableAs($tableTo);
                 if (array_key_exists($table, $joinsMade) && in_array($tableToAs, $joinsMade[$table])) {
-                    # Join already added, continue to next
-                    echo '(continue 1)';
                     continue;
                 }
-
 
                 $joinMethod = 'join'.$this->studly($tableTo);
 
                 if (!method_exists($fetcher, $joinMethod)) {
                     $this->addBuildError(sprintf('%s misses join method %s', $fetcher->getName(), $joinMethod));
-                    echo '(continue 2)';
                     continue;
                 }
 

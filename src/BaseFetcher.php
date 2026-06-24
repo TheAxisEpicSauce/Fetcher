@@ -196,8 +196,15 @@ abstract class BaseFetcher implements Fetcher
         $this->queryValues = null;
 
         $this->groupedFields = [];
+        $this->selectedFields = [];
+        $this->tableFetcherLookup = [];
+        $this->subFetches = [];
+        $this->buildErrors = [];
+
+        self::$joinsAs = [];
 
         if ($this->key !== null) {
+            $this->groupByFields = [];
             $this->groupByFields[$this->table][] = $this->key;
         } else {
             $this->groupByFields = null;
@@ -655,14 +662,7 @@ abstract class BaseFetcher implements Fetcher
 
         if (count($this->groupedFields) > 0) {
             foreach ($rows as $index => $row) {
-                foreach ($this->groupedFields as $groupField)
-                {
-                    if (array_key_exists($groupField, $row) && $row[$groupField] !== null) {
-                        $rows[$index][$groupField] = array_values(array_unique(explode(',', $row[$groupField])));
-                    } else {
-                        $rows[$index][$groupField] = [];
-                    }
-                }
+                $this->processGroupedFields($rows[$index]);
             }
         }
 
@@ -698,17 +698,21 @@ abstract class BaseFetcher implements Fetcher
         if ($row === null) return null;
 
         if (count($this->groupedFields) > 0) {
-            foreach ($this->groupedFields as $groupField)
-            {
-                if (array_key_exists($groupField, $row) && $row[$groupField] !== null) {
-                    $row[$groupField] = array_values(array_unique(explode(',', $row[$groupField])));
-                } else {
-                    $row[$groupField] = [];
-                }
-            }
+            $this->processGroupedFields($row);
         }
 
         return $row;
+    }
+
+    private function processGroupedFields(array &$row): void
+    {
+        foreach ($this->groupedFields as $groupField) {
+            if (array_key_exists($groupField, $row) && $row[$groupField] !== null) {
+                $row[$groupField] = array_values(array_unique(explode(',', $row[$groupField])));
+            } else {
+                $row[$groupField] = [];
+            }
+        }
     }
 
     /**

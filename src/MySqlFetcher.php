@@ -251,12 +251,11 @@ abstract class MySqlFetcher extends BaseFetcher
                             $tableA = str_replace('`', '', $tableA);
                             $tableB = str_replace('`', '', $tableB);
 
-                            $joinPart = preg_replace(sprintf('/(\.`)(%s)(`\.)/', $tableA), '.`'.$tableB.'`.', $joinPart);
-                            $joinPart = preg_replace(sprintf('/(^`)(%s)(`\.)/', $tableA), '`'.$tableB.'`.', $joinPart);
-                            $joinPart = preg_replace(sprintf('/( `)(%s)(`\.)/', $tableA), ' `'.$tableB.'`.', $joinPart);
-                            $joinPart = preg_replace(sprintf('/(\.)(%s)(\.)/', $tableA), '.`'.$tableB.'`.', $joinPart);
-                            $joinPart = preg_replace(sprintf('/(^)(%s)(\.)/', $tableA), '`'.$tableB.'`.', $joinPart);
-                            $joinPart = preg_replace(sprintf('/( )(%s)(\.)/', $tableA), ' `'.$tableB.'`.', $joinPart);
+                            $joinPart = preg_replace(
+                                sprintf('/((?:^|[ .]))`?(%s)`?\./', preg_quote($tableA, '/')),
+                                '$1`'.$tableB.'`.',
+                                $joinPart
+                            );
                         }
 
                         $asPart = str_replace('`', '', $asPart);
@@ -376,32 +375,25 @@ abstract class MySqlFetcher extends BaseFetcher
     private function getGroupByString()
     {
         if ($this->groupByFields === null) return '';
-        $string = null;
+        $parts = [];
         foreach ($this->groupByFields as $table => $fields) {
             foreach ($fields as $field) {
-                if ($string === null) {
-                    $string = " GROUP BY `$table`.`$field`";
-                } else {
-                    $string .= ", `$table`.`$field`";
-                }
+                $parts[] = "`$table`.`$field`";
             }
         }
-        return $string;
+        return empty($parts) ? '' : ' GROUP BY ' . implode(', ', $parts);
     }
 
     private function getOrderByString()
     {
         if ($this->orderByFields === null) return '';
-        $string = null;
+        $parts = [];
         foreach ($this->orderByFields as $table => $fields) {
             foreach ($fields as $field) {
-                if ($string === null) {
-                    $string = " ORDER BY `$table`.`$field`";
-                } else {
-                    $string .= ", `$table`.`$field`";
-                }
+                $parts[] = "`$table`.`$field`";
             }
         }
-        return $string . ($this->orderByDirection==='desc'?' DESC':' ASC');
+        if (empty($parts)) return '';
+        return ' ORDER BY ' . implode(', ', $parts) . ($this->orderByDirection === 'desc' ? ' DESC' : ' ASC');
     }
 }

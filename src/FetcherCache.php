@@ -2,7 +2,6 @@
 
 namespace Fetcher;
 
-use Fetcher\Field\Operator;
 use Redis;
 
 class FetcherCache
@@ -18,33 +17,6 @@ class FetcherCache
     private static bool $UseRedis = false;
     private static ?Redis $Redis = null;
 
-    private array $fieldPrefixes = [
-        '' => Operator::EQUALS,
-        'is_' => Operator::EQUALS,
-        '$_' =>  Operator::EQUALS_FIELD,
-        '$_is' =>  Operator::EQUALS_FIELD,
-    ];
-
-    private array $fieldSuffixes = [
-        '' =>  Operator::EQUALS,
-        '_is' =>  Operator::EQUALS,
-        '_is_not' =>  Operator::NOT_EQUALS,
-        '_gt' =>  Operator::GREATER,
-        '_gte' =>  Operator::GREATER_OR_EQUAL,
-        '_lt' =>  Operator::LESS,
-        '_lte' =>  Operator::LESS_OR_EQUAL,
-        '_$' =>  Operator::EQUALS_FIELD,
-        '_is_$' =>  Operator::EQUALS_FIELD,
-        '_is_not_$' =>  Operator::NOT_EQUALS_FIELD,
-        '_gt_$' =>  Operator::GREATER_FIELD,
-        '_gte_$' =>  Operator::GREATER_OR_EQUAL_FIELD,
-        '_lt_$' =>  Operator::LESS_FIELD,
-        '_lte_$' =>  Operator::LESS_OR_EQUAL_FIELD,
-        '_like' =>  Operator::LIKE,
-        '_in' =>  Operator::IN,
-        '_in_like' =>  Operator::IN_LIKE,
-        '_not_in' =>  Operator::NOT_IN
-    ];
     private ?string $fetcher = null;
     private ?int $fetcherId = null;
 
