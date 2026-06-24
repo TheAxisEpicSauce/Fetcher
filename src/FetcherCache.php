@@ -102,12 +102,21 @@ class FetcherCache
 
     public function loadCache(): bool
     {
-        if (self::$UseRedis) return true;
         if (self::$cache !== null) return true;
-        $content = file_get_contents(self::$CachePath);
 
-        self::$cache = json_decode($content, true);
-        if (empty(self::$cache))
+        if (self::$UseRedis) {
+            self::$cache = [
+                'keys' => self::$Redis->hGetAll('keys') ?: [],
+                'fetchers' => self::$Redis->hGetAll('fetchers') ?: [],
+                'fetcher_ids' => self::$Redis->hGetAll('fetcher_ids') ?: [],
+                'graphs' => self::$Redis->hGetAll('graphs') ?: [],
+            ];
+        } else {
+            $content = file_get_contents(self::$CachePath);
+            self::$cache = json_decode($content, true);
+        }
+
+        if (empty(self::$cache) || empty(self::$cache['fetchers']))
         {
             self::CacheFetchers();
         }
@@ -225,22 +234,16 @@ class FetcherCache
     //-------------------------------------------
     public function getFetcherKey(int $id)
     {
-        if (self::$UseRedis)
-            return self::$Redis->hGet('keys', $id);
         return self::$cache['keys'][$id];
     }
 
     public function getFetchers()
     {
-        if (self::$UseRedis)
-            return self::$Redis->hGetAll('fetchers');
         return self::$cache['fetchers'];
     }
 
     public function getFetcher(int $id)
     {
-        if (self::$UseRedis)
-            return self::$Redis->hGet('fetchers', $id);
         return self::$cache['fetchers'][$id];
     }
 
@@ -251,22 +254,16 @@ class FetcherCache
 
     public function getFetcherIds()
     {
-        if (self::$UseRedis)
-            return self::$Redis->hGetAll('fetcher_ids');
         return self::$cache['fetcher_ids'];
     }
 
     public function getFetcherId(string $fetcherClass)
     {
-        if (self::$UseRedis)
-            return self::$Redis->hGet('fetcher_ids', $fetcherClass);
         return self::$cache['fetcher_ids'][$fetcherClass];
     }
 
     public function getGraph()
     {
-        if (self::$UseRedis)
-            return self::$Redis->hGet('graphs', $this->fetcherId);
         return self::$cache['graphs'][$this->fetcherId];
     }
 }
