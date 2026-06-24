@@ -66,9 +66,12 @@ abstract class MySqlFetcher extends BaseFetcher
 
     protected function buildQuery()
     {
+        $this->subFetches = [];
+        $this->prepareSubFetches($this->fieldGroup);
+
         $shapeKey = $this->getQueryShape($this->fieldGroup);
 
-        if ($shapeKey !== null && isset(self::$queryTemplateCache[$shapeKey])) {
+        if (isset(self::$queryTemplateCache[$shapeKey])) {
             $this->queryString = self::$queryTemplateCache[$shapeKey];
             $this->queryValues = $this->extractValues($this->fieldGroup);
             return;
@@ -93,15 +96,12 @@ abstract class MySqlFetcher extends BaseFetcher
             throw new Exception();
         }
 
-        if ($shapeKey !== null) {
-            self::$queryTemplateCache[$shapeKey] = $this->queryString;
-        }
+        self::$queryTemplateCache[$shapeKey] = $this->queryString;
     }
 
-    private function getQueryShape(GroupField $fieldGroup): ?string
+    private function getQueryShape(GroupField $fieldGroup): string
     {
         $fieldShape = $this->getFieldGroupShape($fieldGroup);
-        if ($fieldShape === '') return null;
 
         $parts = [
             static::class,
@@ -122,7 +122,8 @@ abstract class MySqlFetcher extends BaseFetcher
         $parts = [$group->getConjunction()];
         foreach ($group->getFields() as $field) {
             if ($field instanceof SubFetchField) {
-                return ''; // Cannot cache queries with sub-fetches
+                $parts[] = 'SUB:' . $field->getName() . ':' . $field->getMethod();
+                continue;
             } elseif ($field instanceof ObjectField) {
                 $shape = $field->getField() . $field->getOperator();
                 if (is_array($field->getValue())) {
@@ -138,9 +139,7 @@ abstract class MySqlFetcher extends BaseFetcher
                 }
                 $parts[] = $shape;
             } elseif ($field instanceof GroupField) {
-                $sub = $this->getFieldGroupShape($field);
-                if ($sub === '') return '';
-                $parts[] = '(' . $sub . ')';
+                $parts[] = '(' . $this->getFieldGroupShape($field) . ')';
             }
         }
         return implode(',', $parts);
@@ -173,6 +172,44 @@ abstract class MySqlFetcher extends BaseFetcher
         } elseif ($field instanceof GroupField) {
             foreach ($field->getFields() as $f) {
                 $this->collectValues($f, $values);
+            }
+        }
+    }
+
+    private function prepareSubFetches(GroupField $group): void
+    {
+        foreach ($group->getFields() as $field) {
+            if ($field instanceof SubFetchField) {
+                $fetcher = clone $field->getFetcher();
+
+                if (!array_key_exists($field->getJoin()->getPathAs(), $fetcher->joinsToMake)) {
+                    $fetcher->joinsToMake[$field->getJoin()->getPathAs()] = $field->getJoin();
+                }
+
+                $fieldGroup = new GroupField(Conjunction::AND, []);
+                if (!$field->getFetcher()->fieldGroup->isEmpty()) {
+                    $fieldGroup->addField($field->getFetcher()->fieldGroup);
+                }
+
+                $fetcher->fieldGroup = $fieldGroup;
+                if ($field->getMethod() === 'count') {
+                    $fetcher->select = [
+                        $field->getFetcher()->table . '.' . $field->getFetcher()->key,
+                        sprintf('`%s`.`%s` AS `%s`', $this->table, $this->key, $field->getColumnName())
+                    ];
+                } else {
+                    $fetcher->select = $field->getFetcher()->select;
+                    $fetcher->select[] = sprintf('`%s`.`%s` AS `%s`', $this->table, $this->key, $field->getColumnName());
+                }
+
+                $fetcher->groupByFields = [];
+
+                $this->subFetches[$field->getAs() ?: $field->getName()] = [
+                    $field,
+                    $fetcher
+                ];
+            } elseif ($field instanceof GroupField) {
+                $this->prepareSubFetches($field);
             }
         }
     }
@@ -410,45 +447,14 @@ abstract class MySqlFetcher extends BaseFetcher
             {
                 $fields = [];
                 foreach ($field->getFields() as $f) {
-                    if ($f instanceof SubFetchField) $fieldToStringClosure($f);
-                    else $fields[] = $fieldToStringClosure($f);
+                    if ($f instanceof SubFetchField) continue;
+                    $fields[] = $fieldToStringClosure($f);
                 }
                 return '('.implode($field->getConjunction()===Conjunction::AND?' AND ':' OR ', $fields).')';
             }
             elseif ($field instanceof SubFetchField)
             {
-                $fetcher = $field->getFetcher();
-                if (!array_key_exists($field->getJoin()->getPathAs(), $fetcher->joinsToMake))
-                {
-                    $fetcher->joinsToMake[$field->getJoin()->getPathAs()] = $field->getJoin();
-                }
-
-                $fieldGroup = new GroupField(Conjunction::AND, []);
-                if (!$field->getFetcher()->fieldGroup->isEmpty()) {
-                    $fieldGroup->addField($field->getFetcher()->fieldGroup);
-                }
-
-
-                $fetcher->fieldGroup = $fieldGroup;
-                if ($field->getMethod() === 'count')
-                {
-                    $fetcher->select = [
-                        $field->getFetcher()->table.'.'.$field->getFetcher()->key,
-                        sprintf('`%s`.`%s` AS `%s`', $this->table, $this->key, $field->getColumnName())
-                    ];
-                }
-                else
-                {
-                    $fetcher->select = $field->getFetcher()->select;
-                    $fetcher->select[] = sprintf('`%s`.`%s` AS `%s`', $this->table, $this->key, $field->getColumnName());
-                }
-
-                $fetcher->groupByFields = [];
-
-                $this->subFetches[$field->getAs()?:$field->getName()] = [
-                    $field,
-                    $fetcher
-                ];
+                // Sub-fetch setup handled by prepareSubFetches()
             }
             return '';
         };

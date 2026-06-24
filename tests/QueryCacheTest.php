@@ -256,6 +256,66 @@ class QueryCacheTest extends TestCase
     }
 
     //-------------------------------------------
+    // SubFetch template cache tests
+    //-------------------------------------------
+
+    public function testTemplateCachePopulatesWithSubFetch()
+    {
+        $this->assertEmpty($this->getTemplateCache());
+
+        PersonFetcher::build()
+            ->sub('job', function ($f) { $f->select(['name']); }, 'get', 'jobs')
+            ->where('id', 1)
+            ->toSql();
+
+        $this->assertNotEmpty($this->getTemplateCache(), 'Template cache should populate for queries with sub-fetches');
+    }
+
+    public function testTemplateCacheHitWithSubFetch()
+    {
+        $sql1 = PersonFetcher::build()
+            ->sub('job', function ($f) { $f->select(['name']); }, 'get', 'jobs')
+            ->where('id', 1)
+            ->toSql();
+
+        $sql2 = PersonFetcher::build()
+            ->sub('job', function ($f) { $f->select(['name']); }, 'get', 'jobs')
+            ->where('id', 2)
+            ->toSql();
+
+        $this->assertEquals($sql1, $sql2, 'Sub-fetch queries with same shape should hit template cache');
+    }
+
+    public function testSubFetchRepeatedBuildQueryDoesNotCorrupt()
+    {
+        $fetcher = PersonFetcher::build()
+            ->sub('job', function ($f) { $f->select(['name']); }, 'get', 'jobs')
+            ->where('id', 1);
+
+        $sql1 = $fetcher->toSql();
+        $sql2 = $fetcher->toSql();
+
+        $this->assertEquals($sql1, $sql2, 'Repeated toSql() should produce identical SQL (no state corruption from cloning)');
+    }
+
+    public function testSubFetchDifferentMethodsSeparateCacheEntries()
+    {
+        PersonFetcher::build()
+            ->sub('job', function ($f) {}, 'get', 'jobs')
+            ->where('id', 1)
+            ->toSql();
+        $count1 = count($this->getTemplateCache());
+
+        PersonFetcher::build()
+            ->sub('job', function ($f) {}, 'count', 'job_count')
+            ->where('id', 1)
+            ->toSql();
+        $count2 = count($this->getTemplateCache());
+
+        $this->assertGreaterThan($count1, $count2, 'Different sub-fetch methods (get vs count) should create separate cache entries');
+    }
+
+    //-------------------------------------------
     // Helpers
     //-------------------------------------------
 
