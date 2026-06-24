@@ -31,6 +31,16 @@ class Operator extends Enum
     CONST IN_LIKE = 'IN LIKE';
     CONST NOT_IN = 'NOT IN';
 
+    private static ?array $validOperators = null;
+
+    public static function isValidValue($value, $strict = true): bool
+    {
+        if (self::$validOperators === null) {
+            self::$validOperators = array_flip(array_values(parent::toArray()));
+        }
+        return isset(self::$validOperators[$value]);
+    }
+
     public static function IsFieldOperator(string $operator): bool
     {
         return ($operator === self::EQUALS_FIELD ||

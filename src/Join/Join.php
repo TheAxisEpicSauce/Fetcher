@@ -10,8 +10,9 @@ namespace Fetcher\Join;
 
 class Join
 {
-    private string $path;
-    private string $pathAs;
+    private ?string $path = null;
+    private ?string $pathAs = null;
+    private bool $pathDirty = true;
     private string $fetcherClass;
     private string $type;
     private array $tableMapping = [];
@@ -26,7 +27,6 @@ class Join
     public function __construct()
     {
         $this->fetcherClass = '';
-        $this->path = '';
         $this->type = 'left';
         $this->links = [];
     }
@@ -42,11 +42,13 @@ class Join
 
         $this->addTableMapping($tableTo, $joinName);
 
-        $this->generatePath();
+        $this->pathDirty = true;
     }
 
     private function generatePath()
     {
+        if (!$this->pathDirty) return;
+
         $link = null;
         foreach ($this->links as $link) if ($link->prev === null) break;
         if ($link === null) return;
@@ -66,6 +68,7 @@ class Join
             $pathAsParts[] = $this->getTableAs($pathPart);
 
         $this->pathAs = implode('.', $pathAsParts);
+        $this->pathDirty = false;
     }
 
     /**
@@ -73,11 +76,13 @@ class Join
      */
     public function getPath(): string
     {
+        $this->generatePath();
         return $this->path;
     }
 
     public function getPathAs(): string
     {
+        $this->generatePath();
         return $this->pathAs;
     }
 
@@ -105,7 +110,14 @@ class Join
 
     public function prependPath(string $table)
     {
+        $this->generatePath();
         $this->path = $table.'.'.$this->path;
+        // pathAs needs regeneration
+        $pathParts = explode('.', $this->path);
+        $pathAsParts = [];
+        foreach ($pathParts as $pathPart)
+            $pathAsParts[] = $this->getTableAs($pathPart);
+        $this->pathAs = implode('.', $pathAsParts);
     }
 
     public function getFetcherClass(): string
@@ -115,6 +127,7 @@ class Join
 
     public function getTables(): array
     {
+        $this->generatePath();
         return explode('.', $this->path);
     }
 

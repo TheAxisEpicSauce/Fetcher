@@ -62,8 +62,18 @@ abstract class MySqlFetcher extends BaseFetcher
         throw new Exception('Connection not set');
     }
 
+    private static array $queryTemplateCache = [];
+
     protected function buildQuery()
     {
+        $shapeKey = $this->getQueryShape($this->fieldGroup);
+
+        if ($shapeKey !== null && isset(self::$queryTemplateCache[$shapeKey])) {
+            $this->queryString = self::$queryTemplateCache[$shapeKey];
+            $this->queryValues = $this->extractValues($this->fieldGroup);
+            return;
+        }
+
         $values = [];
 
         $selectString   = $this->getSelectString();
@@ -81,6 +91,89 @@ abstract class MySqlFetcher extends BaseFetcher
 
         if (!$this->isValidBuild()) {
             throw new Exception();
+        }
+
+        if ($shapeKey !== null) {
+            self::$queryTemplateCache[$shapeKey] = $this->queryString;
+        }
+    }
+
+    private function getQueryShape(GroupField $fieldGroup): ?string
+    {
+        $fieldShape = $this->getFieldGroupShape($fieldGroup);
+        if ($fieldShape === '') return null;
+
+        $parts = [
+            static::class,
+            implode(',', $this->select),
+            $this->take,
+            $this->skip,
+            $this->orderByDirection,
+            $this->orderByFields !== null ? json_encode($this->orderByFields) : '',
+            $this->groupByFields !== null ? json_encode($this->groupByFields) : '',
+            $fieldShape,
+        ];
+
+        return md5(implode('|', $parts));
+    }
+
+    private function getFieldGroupShape(GroupField $group): string
+    {
+        $parts = [$group->getConjunction()];
+        foreach ($group->getFields() as $field) {
+            if ($field instanceof SubFetchField) {
+                return ''; // Cannot cache queries with sub-fetches
+            } elseif ($field instanceof ObjectField) {
+                $shape = $field->getField() . $field->getOperator();
+                if (is_array($field->getValue())) {
+                    $shape .= '[' . count($field->getValue()) . ']';
+                } elseif ($field->getValue() === null) {
+                    $shape .= 'NULL';
+                }
+                if ($field->getJoin() !== null) {
+                    $shape .= '@' . $field->getJoin()->getPathAs();
+                }
+                if ($field->getValueJoin() !== null) {
+                    $shape .= '#' . $field->getValueJoin()->getPathAs();
+                }
+                $parts[] = $shape;
+            } elseif ($field instanceof GroupField) {
+                $sub = $this->getFieldGroupShape($field);
+                if ($sub === '') return '';
+                $parts[] = '(' . $sub . ')';
+            }
+        }
+        return implode(',', $parts);
+    }
+
+    private function extractValues(GroupField $group): array
+    {
+        $values = [];
+        $this->collectValues($group, $values);
+        return $values;
+    }
+
+    private function collectValues(Field $field, array &$values): void
+    {
+        if ($field instanceof ObjectField) {
+            if (Operator::IsFieldOperator($field->getOperator())) {
+                return;
+            }
+            if ($field->getValue() === null &&
+                ($field->getOperator() === Operator::EQUALS || $field->getOperator() === Operator::NOT_EQUALS)) {
+                return;
+            }
+            if (is_array($field->getValue())) {
+                foreach ($field->getValue() as $v) {
+                    $values[] = $v;
+                }
+            } else {
+                $values[] = $field->getValue();
+            }
+        } elseif ($field instanceof GroupField) {
+            foreach ($field->getFields() as $f) {
+                $this->collectValues($f, $values);
+            }
         }
     }
 

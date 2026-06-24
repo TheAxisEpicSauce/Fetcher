@@ -81,7 +81,7 @@ abstract class BaseFetcher implements Fetcher
     protected array $tableFetcherLookup;
     protected ?int $take = null;
     protected ?int $skip = null;
-    private FieldObjectValidator $fieldObjectValidator;
+    private static ?FieldObjectValidator $fieldObjectValidator = null;
     protected ?array $groupByFields = null;
     protected ?array $orderByFields;
     private array $groupedFields = [];
@@ -104,7 +104,9 @@ abstract class BaseFetcher implements Fetcher
     {
         if ($this->table === null) throw new Exception('table not set');
         if ($as !== null) $this->table = $as;
-        $this->fieldObjectValidator = new FieldObjectValidator();
+        if (self::$fieldObjectValidator === null) {
+            self::$fieldObjectValidator = new FieldObjectValidator();
+        }
     }
 
     public abstract static function setConnection($connection): void;
@@ -221,8 +223,15 @@ abstract class BaseFetcher implements Fetcher
     //-------------------------------------------
     // Fetcher mapping
     //-------------------------------------------
+    private static array $pathCache = [];
+
     private function getTablePath(string $tableFrom, string $tableTo): ?array
     {
+        $cacheKey = static::class . ':' . $tableFrom . ':' . $tableTo;
+        if (isset(self::$pathCache[$cacheKey])) {
+            return self::$pathCache[$cacheKey];
+        }
+
         $tablePath = null;
         if (is_array($this->cache->getGraph()))
         {
@@ -238,11 +247,12 @@ abstract class BaseFetcher implements Fetcher
                 is_array($this->cache->getGraph())?'No path':'Empty graph'
             ));
         }
-//        if ($tablePath === null) return null;
         if (self::getMaxSearchDepth() !== null && (count($tablePath) - 1) > self::getMaxSearchDepth())
         {
             throw new MaxSearchException($tablePath);
         }
+
+        self::$pathCache[$cacheKey] = $tablePath;
 
         return $tablePath;
     }
@@ -596,25 +606,19 @@ abstract class BaseFetcher implements Fetcher
         if ($join !== null) $object->setJoin($join);
         if ($valueJoin !== null) $object->setValueJoin($valueJoin);
 
-        $this->fieldObjectValidator->validate($object);
+        self::$fieldObjectValidator->validate($object);
 
         return $object;
     }
+
+    private const SUFFIX_REGEX = '/( |^)([a-z_]+?)(_is|_is_not|_gt|_gte|_lt|_lte|_\$|_is_\$|_is_not_\$|_gt_\$|_gte_\$|_lt_\$|_lte_\$|_like|_not_in|_in|_in_like)( |$)/';
 
     private function separateOperator(string $fullField): ?array
     {
         $fieldParts = explode('.', $fullField);
         $columnPart = array_pop($fieldParts);
 
-//        $prefixRegex = '/( |^)(\$_|\$_is_)([a-z_]+?)( |$)/';
-        $suffixRegex = '/( |^)([a-z_]+?)(_is|_is_not|_gt|_gte|_lt|_lte|_\$|_is_\$|_is_not_\$|_gt_\$|_gte_\$|_lt_\$|_lte_\$|_like|_not_in|_in|_in_like)( |$)/';
-
-//        if (preg_match($prefixRegex, $columnPart, $matches))
-//        {
-//            $fieldParts[] = $matches[3];
-//            $operator = $this->fieldPrefixes[$matches[2]];
-//        }
-        if (preg_match($suffixRegex, $columnPart, $matches))
+        if (preg_match(self::SUFFIX_REGEX, $columnPart, $matches))
         {
             $fieldParts[] = $matches[2];
             $operator = $this->fieldSuffixes[$matches[3]];
