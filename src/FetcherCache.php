@@ -36,7 +36,7 @@ class FetcherCache
         self::$Namespace = $namespace;
     }
 
-    public static function SetupRedis(string $redisHost, string $redisCredentials)
+    public static function SetupRedis(string $redisHost, string $redisCredentials, string $prefix = '')
     {
         if (!extension_loaded('redis')) return;
 
@@ -45,6 +45,7 @@ class FetcherCache
         $redis->auth($redisCredentials);
 
         $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_JSON);
+        if ($prefix !== '') $redis->setOption(Redis::OPT_PREFIX, $prefix);
 
         static::$UseRedis = true;
     }
