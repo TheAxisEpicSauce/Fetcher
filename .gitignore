@@ -1,3 +1,4 @@
 /vendor
 /.cache
 /.serena
+/tests/cache/fetcher-cache.json

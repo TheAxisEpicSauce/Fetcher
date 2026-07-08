@@ -12,8 +12,6 @@ class FetcherCache
     private static string $Namespace = '';
     private static ?FetcherCache $_instance = null;
     private static ?array $cache = null;
-    private static int $graphDepth = 5;
-
     private static bool $UseRedis = false;
     private static ?Redis $Redis = null;
 
@@ -64,31 +62,66 @@ class FetcherCache
         return $instance;
     }
 
+    /**
+     * @deprecated Graph depth is no longer used — the builder is depth-unbounded and
+     * cycle-safe. Retained so existing deploy commands don't fatal.
+     */
     public static function setGraphDepth(int $graphDepth): void
     {
-        self::$graphDepth = $graphDepth;
+        // ponytail: intentionally a no-op.
+    }
+
+    /** Drop the in-memory cache + singleton so the next access reloads from disk/Redis. */
+    public static function flush(): void
+    {
+        self::$cache = null;
+        self::$_instance = null;
+    }
+
+    private static function seedRedis(array $cache): void
+    {
+        $tx = self::$Redis->multi();
+        $tx->del('keys', 'fetchers', 'fetcher_ids', 'graphs');
+
+        foreach ($cache['keys'] as $fetcherId => $key) {
+            $tx->hSet('keys', $fetcherId, $key);
+        }
+        foreach ($cache['fetchers'] as $fetcherId => $fetcherClass) {
+            $tx->hSet('fetchers', $fetcherId, $fetcherClass);
+        }
+        foreach ($cache['fetcher_ids'] as $fetcherClass => $fetcherId) {
+            $tx->hSet('fetcher_ids', $fetcherClass, $fetcherId);
+        }
+        foreach ($cache['graphs'] as $fetcherId => $graph) {
+            $tx->hSet('graphs', $fetcherId, $graph);
+        }
+
+        $tx->exec();
     }
 
     public function loadCache(): bool
     {
-        if (self::$cache !== null) return true;
-
-        if (self::$UseRedis) {
-            self::$cache = [
-                'keys' => self::$Redis->hGetAll('keys') ?: [],
-                'fetchers' => self::$Redis->hGetAll('fetchers') ?: [],
-                'fetcher_ids' => self::$Redis->hGetAll('fetcher_ids') ?: [],
-                'graphs' => self::$Redis->hGetAll('graphs') ?: [],
-            ];
-        } else {
-            $content = file_get_contents(self::$CachePath);
-            self::$cache = json_decode($content, true);
+        if (self::$cache !== null) {
+            return true;
         }
 
-        if (empty(self::$cache) || empty(self::$cache['fetchers']))
-        {
-            self::CacheFetchers();
+        $decoded = null;
+        if (self::$CachePath !== '' && file_exists(self::$CachePath)) {
+            $decoded = json_decode(file_get_contents(self::$CachePath), true);
         }
+
+        // Production: a deterministic cache baked to disk at image-build time.
+        if (!empty($decoded) && !empty($decoded['fetchers'])) {
+            self::$cache = $decoded;
+            if (self::$UseRedis) {
+                self::seedRedis($decoded); // ponytail: idempotent — every worker re-seeds identical baked data
+            }
+            return true;
+        }
+
+        // Dev fallback: no baked file (or the '{}' placeholder Setup() writes) → build on demand.
+        // ponytail: fine for a single dev process; production never hits this branch.
+        self::CacheFetchers();
         return true;
     }
 
@@ -104,8 +137,6 @@ class FetcherCache
         $graphs = [];
 
         foreach ($fetcherClasses as $fetcherId => $fetcherClass) {
-            $depth = 1;
-            $passedFetchers = [];
             /** @var BaseFetcher $fetcher */
             $fetcher = new $fetcherClass();
 
@@ -114,27 +145,22 @@ class FetcherCache
             $keys[$fetcherId] = $fetcher->getKey();
 
             $graph = [];
+            $visited = [];
 
-            $graphBuilder = function ($fetcher, $joinedAs, $depth) use (&$graph, &$passedFetchers, &$graphBuilder)
-            {
-                $passedFetchers[$fetcher::class] = $fetcher::class;
-                $joins = $fetcher->getJoins();
-                $graph[$joinedAs] = [];
+            $graphBuilder = function (BaseFetcher $fetcher, string $joinedAs) use (&$graph, &$visited, &$graphBuilder) {
+                if (isset($visited[$joinedAs])) {
+                    return; // already expanded — breaks cycles, no depth limit needed
+                }
+                $visited[$joinedAs] = true;
+                $graph[$joinedAs] ??= [];
 
-                foreach ($joins as $joinName => $joinFetcherClass)
-                {
+                foreach ($fetcher->getJoins() as $joinName => $joinFetcherClass) {
                     $graph[$joinedAs][$joinName] = $joinFetcherClass;
-                    if (!array_key_exists($joinName, $graph))
-                        $graph[$joinName] = [];
-
-                    if ((empty($graph[$joinName]) && $depth <= self::$graphDepth))
-                    {
-                        $graphBuilder(new ($joinFetcherClass), $joinName, $depth+1);
-                    }
+                    $graphBuilder(new $joinFetcherClass(), $joinName);
                 }
             };
 
-            $graphBuilder($fetcher, $fetcher::getTable(), $depth);
+            $graphBuilder($fetcher, $fetcher::getTable());
 
             $graphs[$fetcherId] = $graph;
         }
@@ -146,32 +172,15 @@ class FetcherCache
             'graphs' => $graphs
         ];
 
-        if (self::$UseRedis)
-        {
-            $tx = self::$Redis->multi();
-            $tx->del('keys', 'fetchers', 'fetcher_ids', 'graphs');
-
-            foreach ($keys as $fetcherId => $key)
-            {
-                $tx->hSet('keys', $fetcherId, $key);
-            }
-            foreach ($fetchers as $fetcherId => $fetcherClass)
-            {
-                $tx->hSet('fetchers', $fetcherId, $fetcherClass);
-            }
-            foreach ($fetcherIds as $fetcherClass => $fetcherId)
-            {
-                $tx->hSet('fetcher_ids', $fetcherClass, $fetcherId);
-            }
-            foreach ($graphs as $fetcherId => $graph)
-            {
-                $tx->hSet('graphs', $fetcherId, $graph);
-            }
-
-            $tx->exec();
+        if (self::$UseRedis) {
+            self::seedRedis(self::$cache);
         }
 
-        file_put_contents(self::$CachePath, json_encode(self::$cache));
+        // ponytail: temp + rename is an atomic swap on the same filesystem — a concurrent
+        // reader never sees a half-written file (the dev-fallback rebuild path).
+        $tmp = self::$CachePath . '.tmp';
+        file_put_contents($tmp, json_encode(self::$cache));
+        rename($tmp, self::$CachePath);
 
         return true;
     }

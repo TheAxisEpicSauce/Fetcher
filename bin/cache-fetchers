@@ -1,0 +1,36 @@
+#!/usr/bin/env php
+<?php
+
+// Bake the fetcher join-graph cache to disk. Framework-agnostic; no DB/Redis
+// needed — building the graph only instantiates fetchers and reads their
+// getJoins()/getTable()/getKey(). Intended to run at Docker image-build time.
+//
+// Usage: cache-fetchers <cacheDir> <fetcherDir> <namespace>
+
+$autoloads = [
+    __DIR__ . '/../../../autoload.php', // installed as a dependency: vendor/taes/fetcher/bin
+    __DIR__ . '/../vendor/autoload.php', // running from the library repo itself
+];
+foreach ($autoloads as $autoload) {
+    if (file_exists($autoload)) {
+        require $autoload;
+        break;
+    }
+}
+
+if (!class_exists(Fetcher\FetcherCache::class)) {
+    fwrite(STDERR, "Composer autoloader not found — run `composer install` first.\n");
+    exit(1);
+}
+
+if ($argc < 4) {
+    fwrite(STDERR, "Usage: cache-fetchers <cacheDir> <fetcherDir> <namespace>\n");
+    exit(1);
+}
+
+[$script, $cacheDir, $fetcherDir, $namespace] = $argv;
+
+Fetcher\FetcherCache::Setup($cacheDir, $fetcherDir, $namespace);
+Fetcher\FetcherCache::CacheFetchers();
+
+fwrite(STDOUT, "Fetcher cache written to {$cacheDir}/fetcher-cache.json\n");
