@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.0.3](https://github.com/TheAxisEpicSauce/Fetcher/branches/compare/v2.0.2%0Dv2.0.3) (2026-07-08)
+
+
+### Features
+
+* implement depth-unbounded cycle-safe graph builder and add deep-chain fixtures ([3410f46](https://github.com/TheAxisEpicSauce/Fetcher/commits/3410f46ce0ede3caacbb4d7968b6bd5a4512022d))
+
 ### [2.0.2](https://github.com/TheAxisEpicSauce/Fetcher/branches/compare/v2.0.1%0Dv2.0.2) (2026-06-24)
 
 
