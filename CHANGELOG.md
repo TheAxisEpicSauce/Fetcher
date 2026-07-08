@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.0.4](https://github.com/TheAxisEpicSauce/Fetcher/branches/compare/v2.0.3%0Dv2.0.4) (2026-07-08)
+
+
+### Features
+
+* add redis prefix option to SetupRedis method ([a75cbb7](https://github.com/TheAxisEpicSauce/Fetcher/commits/a75cbb737e3d1d06b4718c7d1e817d43aeed2012))
+
 ### [2.0.3](https://github.com/TheAxisEpicSauce/Fetcher/branches/compare/v2.0.2%0Dv2.0.3) (2026-07-08)
 
 
