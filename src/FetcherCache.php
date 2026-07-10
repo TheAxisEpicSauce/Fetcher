@@ -12,6 +12,7 @@ class FetcherCache
     private static string $Namespace = '';
     private static ?FetcherCache $_instance = null;
     private static ?array $cache = null;
+    private static array $expandedGraphs = [];
     private static bool $UseRedis = false;
     private static ?Redis $Redis = null;
 
@@ -76,6 +77,7 @@ class FetcherCache
     public static function flush(): void
     {
         self::$cache = null;
+        self::$expandedGraphs = [];
         self::$_instance = null;
     }
 
@@ -93,7 +95,13 @@ class FetcherCache
         foreach ($cache['fetcher_ids'] as $fetcherClass => $fetcherId) {
             $tx->hSet('fetcher_ids', $fetcherClass, $fetcherId);
         }
-        foreach ($cache['graphs'] as $fetcherId => $graph) {
+        // Redis keeps the expanded per-fetcherId shape so Redis-side readers are
+        // unaffected by the v2 dedup; expanding on the fly at boot is a transient cost.
+        foreach ($cache['graphs'] as $fetcherId => $nodeIndexes) {
+            $graph = [];
+            foreach ($nodeIndexes as $node => $idx) {
+                $graph[$node] = $cache['nodes'][$idx];
+            }
             $tx->hSet('graphs', $fetcherId, $graph);
         }
 
@@ -111,8 +119,10 @@ class FetcherCache
             $decoded = json_decode(file_get_contents(self::$CachePath), true);
         }
 
-        // Production: a deterministic cache baked to disk at image-build time.
-        if (!empty($decoded) && !empty($decoded['fetchers'])) {
+        // Production: a deterministic v2 cache baked to disk at image-build time.
+        // Anything else (v1 file, '{}' placeholder from Setup(), missing) falls through
+        // to the rebuild — which writes v2, so stale dev checkouts self-heal.
+        if (!empty($decoded) && ($decoded['v'] ?? 0) === 2 && !empty($decoded['fetchers'])) {
             self::$cache = $decoded;
             if (self::$UseRedis) {
                 self::seedRedis($decoded); // ponytail: idempotent — every worker re-seeds identical baked data
@@ -166,12 +176,35 @@ class FetcherCache
             $graphs[$fetcherId] = $graph;
         }
 
+        // v2: dedup join maps by content into a shared pool; graphs reference pool indexes.
+        // Keyed by canonical (key-sorted) serialization, never by node name — the same alias
+        // may legitimately have different join maps in different graphs and must stay distinct.
+        $nodes = [];
+        $nodeIndexByContent = [];
+        $graphRefs = [];
+        foreach ($graphs as $fetcherId => $graph) {
+            $graphRefs[$fetcherId] = [];
+            foreach ($graph as $node => $joins) {
+                $canonical = $joins;
+                ksort($canonical);
+                $canonical = json_encode($canonical);
+                if (!isset($nodeIndexByContent[$canonical])) {
+                    $nodeIndexByContent[$canonical] = count($nodes);
+                    $nodes[] = $joins; // keep first-seen join order; dedup only compares content
+                }
+                $graphRefs[$fetcherId][$node] = $nodeIndexByContent[$canonical];
+            }
+        }
+
         self::$cache = [
+            'v' => 2,
             'keys' => $keys,
             'fetchers' => $fetchers,
             'fetcher_ids' => $fetcherIds,
-            'graphs' => $graphs
+            'nodes' => $nodes,
+            'graphs' => $graphRefs
         ];
+        self::$expandedGraphs = [];
 
         if (self::$UseRedis) {
             self::seedRedis(self::$cache);
@@ -251,6 +284,16 @@ class FetcherCache
 
     public function getGraph()
     {
-        return self::$cache['graphs'][$this->fetcherId];
+        if (!isset(self::$cache['graphs'][$this->fetcherId])) {
+            return null;
+        }
+
+        // Expand lazily, one fetcherId at a time — eager expansion of every graph would
+        // just re-create the duplication v2 removed. The assigned join maps stay
+        // COW-shared with the pool since nothing mutates them.
+        return self::$expandedGraphs[$this->fetcherId] ??= array_map(
+            fn ($idx) => self::$cache['nodes'][$idx],
+            self::$cache['graphs'][$this->fetcherId]
+        );
     }
 }
