@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.0.5](https://github.com/TheAxisEpicSauce/Fetcher/branches/compare/v2.0.4%0Dv2.0.5) (2026-07-10)
+
+
+### Features
+
+* implement v2 cache deduplication with lazy graph expansion ([e5fd96f](https://github.com/TheAxisEpicSauce/Fetcher/commits/e5fd96f14b49497a661b84eda72bdc8fec481dd7))
+
 ### [2.0.4](https://github.com/TheAxisEpicSauce/Fetcher/branches/compare/v2.0.3%0Dv2.0.4) (2026-07-08)
 
 
