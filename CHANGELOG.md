@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.1.0](https://github.com/TheAxisEpicSauce/Fetcher/branches/compare/v2.0.5%0Dv2.1.0) (2026-10-08)
+
+
+### Features
+
+* add groupBy and sum/min/max/avg select aggregates ([ca74b87](https://github.com/TheAxisEpicSauce/Fetcher/commits/ca74b87628b62749f8e59dc358e3ebc477326c03))
+
+
+### Bug Fixes
+
+* **test:** wait for authenticated MySQL login instead of ping before seeding ([6b4e8c5](https://github.com/TheAxisEpicSauce/Fetcher/commits/6b4e8c57d1b8035ae055cbaf3e89e9113c6681aa))
+
 ### [2.0.5](https://github.com/TheAxisEpicSauce/Fetcher/branches/compare/v2.0.4%0Dv2.0.5) (2026-07-10)
 
 
