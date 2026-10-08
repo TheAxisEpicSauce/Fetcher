@@ -74,7 +74,7 @@ abstract class BaseFetcher implements Fetcher
     /**
      * @var array|string[]
      */
-    private array $selectedFields;
+    protected array $selectedFields;
     /**
      * @var array|BaseFetcher[]
      */
@@ -794,44 +794,10 @@ abstract class BaseFetcher implements Fetcher
             [$field, $as] = $this->separateAs($field);
             [$field, $modifier] = $this->separateModifier($field);
 
-            $tables = null;
-            if (str_contains($field, '.')) {
-                $tables = explode('.', $field);
-                $field = array_pop($tables);
-                $table = array_pop($tables);
-                $tables[] = $table;
-            } else {
-                $table = $tables[] = $this->table;
-            }
+            [$table, $tableAs, $field, $fields] = $this->resolveField($field);
 
-            $join = null;
-            if ($table === $this->table)
-            {
-                $fields = array_keys($this->getFields());
-            }
-            elseif ($join = $this->findJoin($tables))
-            {
-                $class = $join->getFetcherClass();
-                $fields = array_keys((new $class)->getFields());
-            }
-            else
-            {
-                throw new Exception('Could not find table '. $table);
-            }
-
-            if (!in_array($field, $fields) && $field !== '*') {
-                throw new Exception(sprintf('Invalid field %s.%s', $table, $field));
-            }
-
-            $tableAs = $table;
-
-            if ($join)
-            {
-                $tableAs = $join->getTableAs($table);
-                if ($tableAs !== $table && $as === null)
-                {
-                    $as = $tableAs.'_'.$field;
-                }
+            if ($tableAs !== $table && $as === null) {
+                $as = $tableAs.'_'.$field;
             }
 
             if ($field === '*') {
@@ -839,17 +805,51 @@ abstract class BaseFetcher implements Fetcher
             } else {
                 $this->addSelectField($tableAs, $field, $as, $modifier);
             }
-
-
-            if ($join !== null)
-            {
-                if (!array_key_exists($join->getPathAs(), $this->joinsToMake))
-                {
-                    $this->joinsToMake[$join->getPathAs()] = $join;
-                }
-            }
         }
         return $this;
+    }
+
+    /**
+     * Resolve a (possibly joined) field path to its table alias and register the join it needs.
+     *
+     * @return array{0: string, 1: string, 2: string, 3: array} [table, tableAs, field, table fields]
+     */
+    private function resolveField(string $field): array
+    {
+        $tables = null;
+        if (str_contains($field, '.')) {
+            $tables = explode('.', $field);
+            $field = array_pop($tables);
+            $table = array_pop($tables);
+            $tables[] = $table;
+        } else {
+            $table = $tables[] = $this->table;
+        }
+
+        $join = null;
+        if ($table === $this->table) {
+            $fields = array_keys($this->getFields());
+        } elseif ($join = $this->findJoin($tables)) {
+            $class = $join->getFetcherClass();
+            $fields = array_keys((new $class)->getFields());
+        } else {
+            throw new Exception('Could not find table '. $table);
+        }
+
+        if (!in_array($field, $fields) && $field !== '*') {
+            throw new Exception(sprintf('Invalid field %s.%s', $table, $field));
+        }
+
+        $tableAs = $table;
+
+        if ($join !== null) {
+            $tableAs = $join->getTableAs($table);
+            if (!array_key_exists($join->getPathAs(), $this->joinsToMake)) {
+                $this->joinsToMake[$join->getPathAs()] = $join;
+            }
+        }
+
+        return [$table, $tableAs, $field, $fields];
     }
 
     private function addSelectFields(string $table, array $fields): void
@@ -868,8 +868,8 @@ abstract class BaseFetcher implements Fetcher
             $fullField = sprintf('GROUP_CONCAT(%s)', $fullField);
             $as = $as?:$field;
             $this->groupedFields[] = $as;
-        } elseif ($modifier === 'count') {
-            $fullField = sprintf('COUNT(%s)', $fullField);
+        } elseif ($modifier) {
+            $fullField = sprintf('%s(%s)', strtoupper($modifier), $fullField);
             $as = $as?:$field;
         }
 
@@ -907,6 +907,25 @@ abstract class BaseFetcher implements Fetcher
     public function getSkip(): ?int
     {
         return $this->skip;
+    }
+    #endregion
+
+    #region GroupBy Method
+    /**
+     * Group by the given fields instead of the primary key. Join paths work as in select().
+     */
+    public function groupBy(array $fields): static
+    {
+        if (empty($fields)) return $this;
+        $this->groupByFields = [];
+        foreach ($fields as $field) {
+            [$table, $tableAs, $field] = $this->resolveField($field);
+            if ($field === '*') {
+                throw new Exception(sprintf('Invalid group by field %s.*', $table));
+            }
+            $this->groupByFields[$tableAs][] = $field;
+        }
+        return $this;
     }
     #endregion
 
@@ -982,7 +1001,7 @@ abstract class BaseFetcher implements Fetcher
 
     private function separateModifier(string $field): array
     {
-        if (preg_match('/(|^)(group|count|)(\()([()a-zA-Z._*]+)(\))(|$)/', $field, $matches)){
+        if (preg_match('/(|^)(group|count|sum|min|max|avg|)(\()([()a-zA-Z._*]+)(\))(|$)/', $field, $matches)){
             return [
                 $matches[4],
                 $matches[2]

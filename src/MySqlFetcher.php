@@ -489,6 +489,10 @@ abstract class MySqlFetcher extends BaseFetcher
         $parts = [];
         foreach ($this->orderByFields as $table => $fields) {
             foreach ($fields as $field) {
+                if ($table === $this->table && ($this->selectedFields[$field][2] ?? null)) {
+                    $parts[] = "`$field`";
+                    continue;
+                }
                 $parts[] = "`$table`.`$field`";
             }
         }

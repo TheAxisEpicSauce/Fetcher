@@ -751,6 +751,79 @@ class MySqlFetcherTest extends TestCase
         ], $data);
 
     }
+
+    public function testGroupByWithAggregates()
+    {
+        $rows = AddressFetcher::build()
+            ->select(['city.name as city_name', 'count(id) as total', 'max(id) as last_id'])
+            ->groupBy(['city.name'])
+            ->orderBy(['total'], 'desc')
+            ->get();
+
+        $this->assertEquals([
+            ['city_name' => 'Hoofddorp', 'total' => '3', 'last_id' => '4'],
+            ['city_name' => 'Schiphol-Rijk', 'total' => '1', 'last_id' => '3'],
+        ], $rows);
+    }
+
+    public function testGroupBySql()
+    {
+        $query = AddressFetcher::build()
+            ->select(['city_id', 'count(id) as total'])
+            ->groupBy(['city_id'])
+            ->orderBy(['total'], 'asc')
+            ->toSql();
+
+        $this->assertEquals(
+            'SELECT `address`.`city_id`, COUNT(`address`.`id`) AS total FROM `address` GROUP BY `address`.`city_id` ORDER BY `total` ASC',
+            $query
+        );
+    }
+
+    public function testGroupByAllAggregates()
+    {
+        $rows = PersonFetcher::build()
+            ->select(['last_name', 'count(id) as total', 'sum(id) as id_sum', 'min(id) as first_id', 'max(id) as last_id', 'avg(id) as avg_id'])
+            ->groupBy(['last_name'])
+            ->orderBy(['total'], 'desc')
+            ->get();
+
+        $this->assertEquals([
+            ['last_name' => 'Pelissier', 'total' => '3', 'id_sum' => '6', 'first_id' => '1', 'last_id' => '3', 'avg_id' => '2.0000'],
+            ['last_name' => 'Karte', 'total' => '1', 'id_sum' => '4', 'first_id' => '4', 'last_id' => '4', 'avg_id' => '4.0000'],
+        ], $rows);
+    }
+
+    public function testGroupByAggregateOverJoin()
+    {
+        $fetcher = PersonFetcher::build()
+            ->select(['last_name', 'sum(job.salary) as salaries', 'min(job.salary) as lowest', 'max(job.salary) as highest'])
+            ->groupBy(['last_name'])
+            ->orderBy(['salaries'], 'asc');
+
+        $this->assertEquals(
+            'SELECT `person`.`last_name`, SUM(`job`.`salary`) AS salaries, MIN(`job`.`salary`) AS lowest, MAX(`job`.`salary`) AS highest FROM `person` LEFT JOIN `job` ON job.id = person.job_id GROUP BY `person`.`last_name` ORDER BY `salaries` ASC',
+            $fetcher->toSql()
+        );
+
+        $this->assertEquals([
+            ['last_name' => 'Karte', 'salaries' => '2000.00', 'lowest' => '2000.00', 'highest' => '2000.00'],
+            ['last_name' => 'Pelissier', 'salaries' => '3200.00', 'lowest' => '600.00', 'highest' => '2000.00'],
+        ], $fetcher->get());
+    }
+
+    public function testGroupByWithoutFieldsKeepsPrimaryKeyGrouping()
+    {
+        $this->assertEquals(
+            PersonFetcher::build()->select(['id'])->toSql(),
+            PersonFetcher::build()->select(['id'])->groupBy([])->toSql()
+        );
+    }
+
+    public function testGroupByUnknownFieldThrows()
+    {
+        $this->expectException(Exception::class);
+
+        PersonFetcher::build()->groupBy(['nope']);
+    }
 }
-
-
