@@ -5,7 +5,7 @@ STANDARD_VERSION_ARGS := --commitUrlFormat "{{host}}/{{owner}}/{{repository}}/co
 test-setup:
 	docker compose up -d mysql mongodb
 	@echo "Waiting for MySQL to be ready..."
-	@until docker exec fetcher-mysql mysqladmin ping -u root -pp0epsteen --silent 2>/dev/null; do sleep 1; done
+	@until docker exec fetcher-mysql mysql -h 127.0.0.1 -u root -pp0epsteen -e "SELECT 1" >/dev/null 2>&1; do sleep 1; done
 	docker exec -i fetcher-mysql mysql -u root -pp0epsteen -e "DROP DATABASE IF EXISTS db_app; CREATE DATABASE db_app;"
 	docker exec -i fetcher-mysql mysql -u root -pp0epsteen db_app < tests/data/mysql.sql
 
